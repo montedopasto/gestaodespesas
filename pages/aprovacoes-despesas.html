@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Aprovações - Despesas</title>
+
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="topbar">
+    <div class="logo-area">
+        <img src="../assets/logo-monte-do-pasto.png" class="logo">
+        <div class="titulo-app">Aprovações - Despesas</div>
+    </div>
+</header>
+
+<div class="main">
+
+<aside class="sidebar">
+
+    <button class="nav-btn" onclick="window.location.href='dashboard.html'">
+    Dashboard
+</button>
+
+    <button class="nav-btn" onclick="window.location.href='nova-despesa.html'">
+        Nova Nota de Despesa
+    </button>
+
+    <button class="nav-btn nav-active">
+        Aprovações
+    </button>
+
+</aside>
+
+<section class="content">
+
+<h2>Pedidos para Aprovação</h2>
+
+<table>
+
+<thead>
+<tr>
+    <th>Data</th>
+    <th>Colaborador</th>
+    <th>Total (€)</th>
+    <th></th>
+</tr>
+</thead>
+
+<tbody id="tabelaAprovacoesDespesas"></tbody>
+
+</table>
+
+</section>
+
+</div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/graph.js"></script>
+<script src="../js/despesas.js"></script>
+
+<script>
+window.addEventListener("load", () => {
+    carregarAprovacoesDespesas();
+});
+</script>
+<!-- MODAL KM -->
+<div id="modalKM" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+z-index:999;
+backdrop-filter: blur(4px);
+">
+
+    <div style="
+    background:white;
+    width:85%;
+    max-width:900px;
+    margin:40px auto;
+    padding:24px;
+    border-radius:16px;
+    max-height:85%;
+    overflow:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.2);
+    ">
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">Detalhe da Despesa</h3>
+            <button onclick="fecharModalKM()" style="border:none; background:none; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+
+        <hr style="margin:15px 0;">
+
+        <div id="zonaEstadoPedido" style="margin-bottom:20px; display:none;">
+    <div id="carimboEstado" style="
+        display:inline-block;
+        padding:10px 18px;
+        border-radius:10px;
+        font-weight:800;
+        font-size:18px;
+        letter-spacing:0.5px;
+        color:white;
+    "></div>
+
+    <div id="justificacaoRejeicao" style="
+        margin-top:12px;
+        padding:12px 14px;
+        border-radius:10px;
+        background:#fff4f4;
+        border:1px solid #f1bcbc;
+        color:#8a1f1f;
+        display:none;
+    ">
+        <b>Justificação da rejeição:</b>
+        <div id="textoJustificacaoRejeicao" style="margin-top:6px;"></div>
+    </div>
+</div>
+
+<div id="conteudoKM"></div>
+
+        <br>
+
+        <button onclick="fecharModalKM()" style="
+        background:#2e7d32;
+        color:white;
+        border:none;
+        padding:10px 20px;
+        border-radius:8px;
+        cursor:pointer;
+        ">
+        Fechar
+        </button>
+
+    </div>
+
+</div>
+</body>
+</html>
