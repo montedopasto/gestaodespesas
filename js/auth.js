@@ -1,8 +1,8 @@
 const msalConfig = {
     auth: {
-        clientId: "81693cb9-9ffb-41d0-b0ff-41dbf29990eb",
+        clientId: "81a4b1c0-13eb-4c3e-bb82-283fa7d52334",
         authority: "https://login.microsoftonline.com/ee417351-ea90-41e0-9147-5ea6ab38ea49",
-        redirectUri: "https://jaca000.github.io/aprovacao-faturas/"
+        redirectUri: "https://montedopasto.github.io/gestaodespesas/"
     }
 };
 
