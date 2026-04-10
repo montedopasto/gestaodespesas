@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Nova Nota de Despesa</title>
+
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="topbar">
+
+<div class="logo-area">
+<img src="../assets/logo-monte-do-pasto.png" class="logo">
+<div class="titulo-app">Notas de Despesa</div>
+</div>
+
+</header>
+
+<div class="main">
+
+<aside class="sidebar">
+
+<button class="nav-btn" onclick="window.location.href='dashboard.html'">
+Dashboard
+</button>
+
+<button class="nav-btn nav-active">
+Nova Nota de Despesa
+</button>
+
+</aside>
+
+<section class="content">
+
+<h2>Nova Nota de Despesa</h2>
+
+<label>Tipo de despesa</label>
+<select id="tipo" onchange="mudarTipo()">
+<option value="">Selecionar</option>
+<option value="km">Deslocação (KMS)</option>
+<option value="despesas">Outras despesas</option>
+</select>
+
+<div id="areaKM" style="display:none; margin-top:20px;">
+    <h3>Deslocações em KM</h3>
+    <table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Origem</th>
+<th>Destino</th>
+<th>Justificação</th>
+<th>KMs</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody id="linhasKM"></tbody>
+</table>
+
+<button onclick="addLinhaKM()">+ Adicionar linha</button>
+
+<br><br>
+
+<p><b>Total KMs:</b> <span id="totalKMs">0</span></p>
+
+<label>Valor por KM (€)</label>
+<input id="valorKM" type="number" value="0.36" step="0.01" oninput="calcularKM()">
+
+<p><b>Total Recebido:</b> <span id="totalFinalKM">0.00 €</span></p>
+<br><br>
+
+<!-- ================= APROVAÇÃO ================= -->
+
+<h3 style="margin-top:40px;">Aprovação</h3>
+
+<label>Aprovador</label><br>
+<select id="aprovador1"></select>
+
+<br><br>
+
+<button type="button" onclick="mostrarSegundoAprovador()">
+    + Adicionar segundo aprovador
+</button>
+
+<div id="segundoAprovadorBox" style="display:none; margin-top:10px;">
+    <label>Segundo aprovador</label><br>
+    <select id="aprovador2"></select>
+</div>
+<div style="margin-top:40px;">
+    <button onclick="guardarDespesaKM()" 
+        style="padding:12px 20px; border-radius:10px; background:#3b82f6; color:white; border:none; cursor:pointer;">
+        Submeter Nota de Despesa
+    </button>
+</div>
+
+<div id="areaDespesas" style="display:none; margin-top:20px;">
+    <h3>Outras despesas</h3>
+</div>
+
+
+</section>
+
+</div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>    
+<script src="../js/auth.js"></script>
+<script src="../js/graph.js"></script>
+<script src="../js/despesas.js"></script>
+<script src="../js/app.js"></script>
+    
+<script>
+function mudarTipo(){
+
+const tipo = document.getElementById("tipo").value;
+
+document.getElementById("areaKM").style.display = "none";
+document.getElementById("areaDespesas").style.display = "none";
+
+if(tipo === "km"){
+document.getElementById("areaKM").style.display = "block";
+}
+
+if(tipo === "despesas"){
+document.getElementById("areaDespesas").style.display = "block";
+}
+
+}
+window.addEventListener("load", () => {
+    carregarAprovadores();
+});
+</script>
+
+</body>
+</html>
