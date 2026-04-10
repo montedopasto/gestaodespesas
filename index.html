@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Gestão de Pedidos</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+<style>
+
+/* BASE */
+body{
+margin:0;
+font-family:system-ui, Arial, sans-serif;
+overflow:hidden;
+}
+
+/* FUNDO */
+.bg-animated{
+position:fixed;
+width:100%;
+height:100%;
+top:0;
+left:0;
+z-index:-1;
+
+background:
+radial-gradient(circle at 20% 30%, #dbeafe 0%, transparent 40%),
+radial-gradient(circle at 80% 20%, #e0e7ff 0%, transparent 40%),
+radial-gradient(circle at 60% 80%, #c7d2fe 0%, transparent 40%),
+linear-gradient(180deg,#f8fafc,#eef2f7);
+
+animation:moveBg 12s ease-in-out infinite alternate;
+}
+
+@keyframes moveBg{
+0%{transform:translateY(0px);}
+100%{transform:translateY(-30px);}
+}
+
+/* LAYOUT */
+.login-wrapper{
+display:flex;
+align-items:center;
+justify-content:center;
+height:100vh;
+transition:all 0.4s ease;
+}
+
+/* CARD */
+.login-box{
+background:rgba(255,255,255,0.96);
+padding:60px 70px;
+border-radius:22px;
+
+box-shadow:
+0 30px 80px rgba(0,0,0,0.18);
+
+text-align:center;
+
+max-width:460px;
+width:100%;
+}
+
+/* LOGO */
+.login-logo{
+height:95px;
+margin-bottom:10px;
+
+filter:drop-shadow(0 6px 18px rgba(59,130,246,0.25));
+animation:logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat{
+0%{transform:translateY(0px);}
+50%{transform:translateY(-4px);}
+100%{transform:translateY(0);}
+}
+
+/* TEXTO */
+.login-brand{
+font-size:12px;
+letter-spacing:2px;
+color:#64748b;
+font-weight:600;
+margin-bottom:6px;
+}
+
+.login-title{
+font-size:26px;
+font-weight:700;
+margin-bottom:10px;
+}
+
+.login-sub{
+font-size:14px;
+color:#64748b;
+margin-bottom:35px;
+}
+
+/* BOTÃO */
+.login-btn{
+background:linear-gradient(135deg,#3b82f6,#2563eb);
+border:none;
+color:white;
+
+padding:15px 28px;
+border-radius:14px;
+
+font-weight:600;
+cursor:pointer;
+
+box-shadow:0 12px 30px rgba(37,99,235,0.35);
+transition:all .25s;
+}
+
+.login-btn:hover{
+transform:translateY(-3px) scale(1.02);
+box-shadow:0 25px 55px rgba(37,99,235,0.5);
+}
+
+/* LOADING */
+.spinner{
+width:30px;
+height:30px;
+
+border:3px solid #cbd5f5;
+border-top:3px solid #3b82f6;
+
+border-radius:50%;
+margin:0 auto 10px;
+
+animation:spin 0.8s linear infinite;
+}
+
+@keyframes spin{
+to{transform:rotate(360deg);}
+}
+
+.loading-text{
+font-size:13px;
+color:#64748b;
+}
+
+/* OVERLAY */
+.welcome-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+
+background:linear-gradient(180deg,#0f172a,#1e293b);
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+opacity:0;
+pointer-events:none;
+
+transition:all 0.4s ease;
+
+z-index:999;
+}
+
+.welcome-overlay.show{
+opacity:1;
+pointer-events:auto;
+}
+
+.welcome-text{
+font-size:44px;
+font-weight:700;
+color:white;
+
+animation:fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+/* LAYOUT OVERLAY */
+.welcome-box{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:20px;
+}
+
+.welcome-logo{
+height:80px;
+opacity:0.95;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="bg-animated"></div>
+
+<div class="login-wrapper">
+
+<div class="login-box">
+
+<img src="assets/montedopasto.png" class="login-logo">
+
+<div class="login-brand">MONTE DO PASTO • SISTEMA INTERNO</div>
+
+<div class="login-title">Gestão de Pedidos</div>
+
+<div class="login-sub">
+Sistema Interno para Gestão e Aprovação de Pedidos
+</div>
+
+<button class="login-btn" onclick="iniciarLogin()" id="btnLogin">
+Iniciar sessão com Microsoft
+</button>
+
+<div id="loadingBox" style="display:none; margin-top:20px;">
+<div class="spinner"></div>
+<div class="loading-text" id="loadingText">
+A ligar ao sistema...
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- OVERLAY -->
+<div id="welcomeOverlay" class="welcome-overlay">
+
+  <div class="welcome-box">
+
+    <img src="assets/montedopasto.png" class="welcome-logo">
+
+    <div class="welcome-text" id="welcomeText">
+      Bem-vindo
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+
+function iniciarLogin(){
+
+document.getElementById("btnLogin").style.display = "none";
+document.getElementById("loadingBox").style.display = "block";
+
+setTimeout(() => {
+login();
+}, 500);
+
+}
+
+
+/* CHECK LOGIN CORRETO */
+async function verificarLogin(){
+
+try{
+
+// espera um pouco para garantir msal carregado
+await new Promise(r => setTimeout(r, 300));
+
+if(typeof msalInstance === "undefined") return;
+
+const contas = msalInstance.getAllAccounts();
+
+if(contas.length > 0){
+
+const conta = contas[0];
+
+const nome = conta.name || "Utilizador";
+const primeiroNome = nome.split(" ")[0];
+
+const overlay = document.getElementById("welcomeOverlay");
+const texto = document.getElementById("welcomeText");
+
+/* mostrar overlay */
+overlay.classList.add("show");
+
+/* texto */
+texto.innerText = "Bem-vindo, " + primeiroNome;
+
+/* entrar */
+setTimeout(() => {
+    window.location.replace("pages/dashboard.html");
+}, 1800);
+
+}
+
+}catch(e){
+console.log("Erro login:", e);
+}
+
+}
+
+window.addEventListener("load", verificarLogin);
+
+</script>
+
+</body>
+
+</html>
