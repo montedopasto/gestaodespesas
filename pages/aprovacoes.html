@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aprovações</title>
+
+<link rel="stylesheet" href="../css/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/lucide@latest/dist/umd/lucide.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="topbar">
+
+  <div class="logo-area">
+    <img src="../assets/logo-monte-do-pasto.png" class="logo">
+    <div class="titulo-app">Aprovação de Faturas</div>
+  </div>
+
+  <div class="topbar-direita">
+    <div id="dataHora"></div>
+    <div id="utilizador"></div>
+  </div>
+
+</header>
+
+<div class="main">
+
+  <aside class="sidebar">
+
+    <button class="nav-btn" onclick="window.location.href='dashboard.html'">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Dashboard</span>
+    </button>
+
+    <button class="nav-btn nav-active" onclick="window.location.href='aprovacoes.html'">
+      <i data-lucide="check-circle"></i>
+      <span>Aprovações</span>
+    </button>
+
+    <button class="nav-btn" onclick="window.location.href='pedidos.html'">
+      <i data-lucide="file-text"></i>
+      <span>Pedidos</span>
+    </button>
+
+    <button class="nav-btn" id="btnNovaFatura">
+      <i data-lucide="plus-circle"></i>
+      <span>Nova Fatura</span>
+    </button>
+
+    <button class="nav-btn" id="btnNovaDespesa">
+      <i data-lucide="receipt"></i>
+      <span>Nova Nota de Despesa</span>
+    </button>
+
+    <button class="nav-btn" id="btnAdmin">
+      <i data-lucide="settings"></i>
+      <span>Administração</span>
+    </button>
+
+  </aside>
+
+  <section class="content">
+
+    <h2>Aprovações</h2>
+
+    <div class="cards">
+
+      <div class="card">
+        <div class="card-icon">
+          <i data-lucide="user-check"></i>
+        </div>
+        <h3>Pendentes para mim</h3>
+        <p id="totalAprovacoesPendentes">0</p>
+      </div>
+
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="pesquisaAprovacoes" placeholder="Pesquisar fornecedor ou nº fatura">
+    </div>
+
+    <table id="tabelaAprovacoes">
+
+      <thead>
+        <tr>
+          <th>Nº Interno</th>
+          <th>Fornecedor</th>
+          <th>Nº Fatura</th>
+          <th>Estado</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+
+      <tbody id="listaAprovacoes"></tbody>
+
+    </table>
+
+  </section>
+
+</div>
+
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+
+<!-- 🔴 ESTA LINHA É A QUE FALTA -->
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+<script src="../js/auth.js"></script>
+<script src="../js/graph.js"></script>
+<script src="../js/app.js"></script>
+
+</body>
+</html>
