@@ -737,3 +737,96 @@ window.downloadPDF = async function(){
 
     html2pdf().set(opt).from(htmlPDF).save();
 };
+/* =============================
+   LINHAS OUTRAS DESPESAS
+============================= */
+
+function addLinhaDespesa(){
+
+    const tbody = document.getElementById("linhasDespesas");
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+
+    <td>
+        <select class="rubrica">
+
+            <option value="">Selecionar</option>
+
+            <option value="Alojamento">Alojamento</option>
+
+            <option value="Transporte">Transporte</option>
+
+            <option value="Combustível">Combustível</option>
+
+            <option value="Refeições">Refeições</option>
+
+            <option value="Telefone">Telefone</option>
+
+            <option value="Outros">Outros</option>
+
+        </select>
+    </td>
+
+    <td>
+        <input type="text" class="descricao">
+    </td>
+
+    <td>
+        <input type="number"
+               class="valorDespesa"
+               step="0.01"
+               oninput="calcularTotalDespesas()">
+    </td>
+
+    <td>
+        <input type="file"
+               class="ficheiroDespesa"
+               accept=".pdf,image/*">
+    </td>
+
+    <td>
+        <button onclick="removerLinhaDespesa(this)">
+            X
+        </button>
+    </td>
+
+    `;
+
+    tbody.appendChild(tr);
+
+}
+
+
+/* =============================
+   REMOVER LINHA DESPESA
+============================= */
+
+function removerLinhaDespesa(btn){
+
+    btn.closest("tr").remove();
+
+    calcularTotalDespesas();
+
+}
+
+
+/* =============================
+   TOTAL OUTRAS DESPESAS
+============================= */
+
+function calcularTotalDespesas(){
+
+    let total = 0;
+
+    document.querySelectorAll(".valorDespesa").forEach(input => {
+
+        total += Number(input.value) || 0;
+
+    });
+
+    document.getElementById("totalDespesas").innerText =
+        total.toFixed(2) + " €";
+
+}
