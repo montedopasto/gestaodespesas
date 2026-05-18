@@ -1261,7 +1261,10 @@ linhas.push({
         ficheiroInfo?.nome || "",
 
     ficheiroUrl:
-        ficheiroInfo?.url || ""
+        ficheiroInfo?.url || "",
+
+    ficheiroDownloadUrl:
+        ficheiroInfo?.downloadUrl || ""
 
 });
 
