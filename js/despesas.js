@@ -780,9 +780,10 @@ window.downloadPDF = async function(){
 }
 
                 td{
-                    border:1px solid #ccc;
-                    padding:6px;
-                }
+    border:1px solid #ccc;
+    padding:4px;
+    font-size:10px;
+}
 
             </style>
 
@@ -944,9 +945,10 @@ window.downloadPDF = async function(){
 }
 
             td{
-                border:1px solid #ccc;
-                padding:6px;
-            }
+    border:1px solid #ccc;
+    padding:4px;
+    font-size:10px;
+}
 
         </style>
 
