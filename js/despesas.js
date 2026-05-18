@@ -761,8 +761,10 @@ window.downloadPDF = async function(){
 }
 
                 h1{
-                    color:#2e7d32;
-                }
+    color:#2e7d32;
+    font-size:28px;
+    margin:0 0 12px 0;
+}
 
                 table{
                     width:100%;
