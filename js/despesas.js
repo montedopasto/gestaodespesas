@@ -754,7 +754,7 @@ pdf.addImage(
     155,
     4,
     30,
-    25
+    23
 );
 pdf.setTextColor(255,255,255);
 pdf.setFontSize(22);
