@@ -748,6 +748,9 @@ function addLinhaDespesa(){
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
+<td>
+    <input type="date" class="dataDespesa">
+</td>
 
     <td>
         <select class="rubrica">
