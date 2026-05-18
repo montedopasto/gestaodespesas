@@ -1273,6 +1273,7 @@ async function uploadFicheiroDespesa(file){
     url: uploadData.webUrl,
 
     downloadUrl:
+
         uploadData["@microsoft.graph.downloadUrl"]
 
 };
