@@ -135,7 +135,43 @@ Nova Nota de Despesa
         <b>Total:</b>
         <span id="totalDespesas">0.00 €</span>
     </p>
+<br><br>
 
+<h3>Aprovação</h3>
+
+<label>Aprovador</label><br>
+<select id="aprovador1Despesa"></select>
+
+<br><br>
+
+<button type="button" onclick="mostrarSegundoAprovadorDespesa()">
+    + Adicionar segundo aprovador
+</button>
+
+<div id="segundoAprovadorDespesaBox"
+     style="display:none; margin-top:10px;">
+
+    <label>Segundo aprovador</label><br>
+
+    <select id="aprovador2Despesa"></select>
+
+</div>
+
+<div style="margin-top:40px;">
+
+    <button onclick="guardarOutrasDespesas()"
+        style="
+        padding:12px 20px;
+        border-radius:10px;
+        background:#16a34a;
+        color:white;
+        border:none;
+        cursor:pointer;
+    ">
+        Submeter Despesa
+    </button>
+
+</div>
 </div>
 
 
