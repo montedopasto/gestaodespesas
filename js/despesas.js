@@ -1389,8 +1389,12 @@ async function uploadFicheiroDespesa(file){
     const uploadData = await uploadResp.json();
 
     return {
-        nome: nomeFinal,
-        url: uploadData.webUrl
-    };
 
-}
+    nome: nomeFinal,
+
+    url: uploadData.webUrl,
+
+    downloadUrl:
+        uploadData["@microsoft.graph.downloadUrl"]
+
+};
