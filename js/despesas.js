@@ -754,10 +754,11 @@ window.downloadPDF = async function(){
             <style>
 
                 body{
-                    font-family:Arial;
-                    padding:30px;
-                    color:#333;
-                }
+    font-family:Arial;
+    padding:18px;
+    color:#333;
+    font-size:13px;
+}
 
                 h1{
                     color:#2e7d32;
@@ -903,10 +904,11 @@ window.downloadPDF = async function(){
         <style>
 
             body{
-                font-family:Arial;
-                padding:30px;
-                color:#333;
-            }
+    font-family:Arial;
+    padding:18px;
+    color:#333;
+    font-size:13px;
+}
 
             h1{
                 color:#2e7d32;
