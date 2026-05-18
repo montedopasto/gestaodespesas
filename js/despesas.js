@@ -757,7 +757,7 @@ pdf.roundedRect(10, 35, 190, 45, 3, 3);
 
 pdf.setFontSize(11);
 
-    let y = 15;
+    let y = 45;
 
     function novaLinha(texto, espacamento = 7){
 
@@ -777,10 +777,25 @@ pdf.setFontSize(11);
 
     pdf.setFontSize(11);
 
-    novaLinha("Submetido por: " + (f.CriadoPorNome || "-"));
-    novaLinha("Aprovado por: " + (f.AprovadoPorNome || "-"));
-    novaLinha("Estado: " + (f.Estado || "-"));
-    novaLinha("Data/Hora: " + new Date(f.Modified).toLocaleString("pt-PT"));
+    pdf.setFont(undefined, "bold");
+novaLinha("Submetido por:");
+pdf.setFont(undefined, "normal");
+novaLinha(f.CriadoPorNome || "-");
+
+pdf.setFont(undefined, "bold");
+novaLinha("Aprovado por:");
+pdf.setFont(undefined, "normal");
+novaLinha(f.AprovadoPorNome || "-");
+
+pdf.setFont(undefined, "bold");
+novaLinha("Estado:");
+pdf.setFont(undefined, "normal");
+novaLinha(f.Estado || "-");
+
+pdf.setFont(undefined, "bold");
+novaLinha("Data/Hora:");
+pdf.setFont(undefined, "normal");
+novaLinha(new Date(f.Modified).toLocaleString("pt-PT"));
 
     if(f.JustificacaoRejeicao){
 
