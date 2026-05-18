@@ -882,3 +882,134 @@ async function carregarAprovadoresOutrasDespesas(){
     });
 
 }
+/* =============================
+   GUARDAR OUTRAS DESPESAS
+============================= */
+
+async function guardarOutrasDespesas(){
+
+    const utilizador = await testarGraph();
+
+    const token = await getAccessToken();
+
+    const site = await obterSiteApp();
+
+    const siteId = site.id;
+
+    const rows =
+        document.querySelectorAll("#linhasDespesas tr");
+
+    const linhas = [];
+
+    for(const tr of rows){
+
+        const data =
+            tr.querySelector(".dataDespesa")?.value || "";
+
+        const rubrica =
+            tr.querySelector(".rubrica")?.value || "";
+
+        const descricao =
+            tr.querySelector(".descricao")?.value || "";
+
+        const valor =
+            Number(
+                tr.querySelector(".valorDespesa")?.value
+            ) || 0;
+
+        if(!data || !rubrica || !descricao || valor <= 0){
+            continue;
+        }
+
+        linhas.push({
+            data,
+            rubrica,
+            descricao,
+            valor
+        });
+
+    }
+
+    if(linhas.length === 0){
+
+        alert("Tem de inserir pelo menos uma despesa.");
+
+        return;
+    }
+
+    let total = 0;
+
+    linhas.forEach(l => {
+        total += l.valor;
+    });
+
+    const aprovador1 =
+        document.getElementById("aprovador1Despesa")?.value || "";
+
+    const aprovador2 =
+        document.getElementById("aprovador2Despesa")?.value || "";
+
+    if(!aprovador1){
+
+        alert("Tem de selecionar um aprovador.");
+
+        return;
+    }
+
+    const body = {
+
+        fields: {
+
+            Title:
+                "Despesa - " +
+                new Date().toLocaleDateString("pt-PT"),
+
+            TipoDocumento: "DESPESA",
+
+            CriadoPorNome:
+                utilizador.displayName,
+
+            CriadoPorEmail:
+                utilizador.mail ||
+                utilizador.userPrincipalName,
+
+            Estado: "Pendente",
+
+            TotalRecebido: total,
+
+            LinhasJSON: JSON.stringify(linhas),
+
+            Aprovador1Email: aprovador1,
+
+            Aprovador2Email: aprovador2
+
+        }
+
+    };
+
+    const resp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/NotasDespesa/items`,
+        {
+            method:"POST",
+
+            headers:{
+                Authorization:"Bearer " + token,
+                "Content-Type":"application/json"
+            },
+
+            body: JSON.stringify(body)
+        }
+    );
+
+    if(!resp.ok){
+
+        alert("Erro ao guardar despesa");
+
+        return;
+    }
+
+    alert("✅ Despesa guardada com sucesso!");
+
+    window.location.href = "dashboard.html";
+
+}
