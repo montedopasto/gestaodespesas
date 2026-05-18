@@ -741,6 +741,21 @@ window.downloadPDF = async function(){
     ========================================= */
 
     const pdf = new jsPDF("p","mm","a4");
+   const paginaLargura = 210;
+
+pdf.setFillColor(34, 139, 34);
+pdf.rect(0, 0, paginaLargura, 28, "F");
+
+pdf.setTextColor(255,255,255);
+pdf.setFontSize(22);
+pdf.text("NOTA DE DESPESA", 15, 18);
+
+pdf.setTextColor(0,0,0);
+
+pdf.setDrawColor(220,220,220);
+pdf.roundedRect(10, 35, 190, 45, 3, 3);
+
+pdf.setFontSize(11);
 
     let y = 15;
 
