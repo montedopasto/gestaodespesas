@@ -702,6 +702,8 @@ window.verPreviewKM = function(){
 }
 window.downloadPDF = async function(){
 
+    const { jsPDF } = window.jspdf;
+
     const modal = document.getElementById("modalKM");
 
     const id = modal.dataset.id;
@@ -733,327 +735,200 @@ window.downloadPDF = async function(){
     const linhas =
         JSON.parse(f.LinhasJSON || "[]");
 
-    const dataHora =
-        new Date(f.Modified)
-        .toLocaleString("pt-PT");
+    const pdf = new jsPDF("p","mm","a4");
+
+    let y = 15;
+
+    function novaLinha(texto, espacamento = 7){
+
+        if(y > 270){
+            pdf.addPage();
+            y = 15;
+        }
+
+        pdf.text(String(texto), 15, y);
+
+        y += espacamento;
+    }
+
+    pdf.setFontSize(18);
+
+    novaLinha("Nota de Despesa", 10);
+
+    pdf.setFontSize(11);
+
+    novaLinha("Submetido por: " + (f.CriadoPorNome || "-"));
+    novaLinha("Aprovado por: " + (f.AprovadoPorNome || "-"));
+    novaLinha("Estado: " + (f.Estado || "-"));
+    novaLinha("Data/Hora: " + new Date(f.Modified).toLocaleString("pt-PT"));
+
+    if(f.JustificacaoRejeicao){
+
+        novaLinha("");
+        novaLinha("Justificação:");
+        novaLinha(f.JustificacaoRejeicao);
+
+    }
 
     /* =========================================
-       PDF DESPESAS
+       KMS
     ========================================= */
 
-    if(f.TipoDocumento === "DESPESA"){
+    if(f.TipoDocumento === "KMS"){
 
-        const htmlPDF = `
+        novaLinha("");
 
-        <html>
+        novaLinha("Total KMs: " + (f.TotalKMs || 0));
 
-        <head>
+        novaLinha("Valor/KM: " + (f.ValorPorKM || 0) + " €");
 
-            <meta charset="UTF-8">
+        novaLinha(
+            "Total: " +
+            Number(f.TotalRecebido || 0).toFixed(2) +
+            " €"
+        );
 
-            <style>
+        novaLinha("");
 
-                body{
-    font-family:Arial;
-    padding:18px;
-    color:#333;
-    font-size:13px;
-}
+        linhas.forEach((l, index) => {
 
-                h1{
-    color:#2e7d32;
-    font-size:28px;
-    margin:0 0 12px 0;
-}
+            pdf.setFontSize(12);
 
-                table{
-                    width:100%;
-                    border-collapse:collapse;
-                    margin-top:20px;
+            novaLinha(
+                "Linha " + (index + 1),
+                8
+            );
+
+            pdf.setFontSize(10);
+
+            novaLinha("Data: " + (l.data || "-"));
+            novaLinha("Origem: " + (l.origem || "-"));
+            novaLinha("Destino: " + (l.destino || "-"));
+            novaLinha("Justificação: " + (l.justificacao || "-"));
+            novaLinha("KMs: " + (l.kms || 0));
+
+            novaLinha("");
+
+        });
+
+    }
+
+    /* =========================================
+       DESPESAS
+    ========================================= */
+
+    else{
+
+        novaLinha("");
+
+        novaLinha(
+            "Total: " +
+            Number(f.TotalRecebido || 0).toFixed(2) +
+            " €"
+        );
+
+        novaLinha("");
+
+        for(const [index, l] of linhas.entries()){
+
+            pdf.setFontSize(12);
+
+            novaLinha(
+                "Despesa " + (index + 1),
+                8
+            );
+
+            pdf.setFontSize(10);
+
+            novaLinha("Data: " + (l.data || "-"));
+            novaLinha("Rubrica: " + (l.rubrica || "-"));
+            novaLinha("Descrição: " + (l.descricao || "-"));
+
+            novaLinha(
+                "Valor: " +
+                Number(l.valor || 0).toFixed(2) +
+                " €"
+            );
+
+            if(l.ficheiroNome){
+
+                novaLinha(
+                    "Documento: " +
+                    l.ficheiroNome
+                );
+
+            }
+
+            novaLinha("");
+
+            /* =============================
+               ANEXAR IMAGENS AO PDF
+            ============================= */
+
+            if(l.ficheiroDownloadUrl){
+
+                try{
+
+                    const response =
+                        await fetch(
+                            l.ficheiroDownloadUrl
+                        );
+
+                    const blob =
+                        await response.blob();
+
+                    if(blob.type.startsWith("image/")){
+
+                        const reader =
+                            new FileReader();
+
+                        const base64 =
+                            await new Promise(resolve => {
+
+                                reader.onloadend =
+                                    () => resolve(reader.result);
+
+                                reader.readAsDataURL(blob);
+
+                            });
+
+                        if(y > 180){
+
+                            pdf.addPage();
+
+                            y = 15;
+
+                        }
+
+                        pdf.addImage(
+                            base64,
+                            "JPEG",
+                            15,
+                            y,
+                            90,
+                            60
+                        );
+
+                        y += 70;
+
+                    }
+
+                }catch(e){
+
+                    console.log(
+                        "Erro imagem:",
+                        e
+                    );
+
                 }
 
-                th{
-    background:#2e7d32;
-    color:white;
-    padding:5px;
-    font-size:11px;
-}
-
-                td{
-    border:1px solid #ccc;
-    padding:4px;
-    font-size:10px;
-}
-
-            </style>
-
-        </head>
-
-        <body>
-
-            <div style="display:flex; justify-content:space-between;">
-                <div>
-                    <b>Gestão de Despesas</b>
-                </div>
-            </div>
-
-            <hr>
-
-            <h1>Nota de Despesa</h1>
-
-            <p><b>Submetido por:</b> ${f.CriadoPorNome}</p>
-
-            <p><b>Aprovado por:</b> ${f.AprovadoPorNome || "—"}</p>
-
-            <p><b>Estado:</b> ${f.Estado}</p>
-
-            <p><b>Data/Hora:</b> ${dataHora}</p>
-
-            ${
-                f.Estado === "Rejeitado" &&
-                f.JustificacaoRejeicao
-                ?
-                `
-                <div style="
-                    margin-top:10px;
-                    padding:10px;
-                    background:#ffecec;
-                    border:1px solid #f5c2c2;
-                ">
-                    <b>Justificação:</b><br>
-                    ${f.JustificacaoRejeicao}
-                </div>
-                `
-                :
-                ""
             }
 
-            <br>
+        }
 
-            <p>
-                <b>Total:</b>
-                ${Number(f.TotalRecebido).toFixed(2)} €
-            </p>
-
-            <table>
-
-                <tr>
-                    <th>Data</th>
-                    <th>Rubrica</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                </tr>
-
-                ${linhas.map(l => `
-
-                    <tr>
-
-                        <td>${l.data}</td>
-
-                        <td>${l.rubrica}</td>
-
-                        <td>${l.descricao}</td>
-
-                        <td>${Number(l.valor).toFixed(2)} €</td>
-
-                    </tr>
-
-                `).join("")}
-
-            </table>
-
-        </body>
-
-        </html>
-        `;
-
-        const opt = {
-
-    margin: [8,8,8,8],
-
-    filename: 'Nota_Despesa.pdf',
-
-    image: {
-        type: 'jpeg',
-        quality: 1
-    },
-
-    html2canvas: {
-        scale: 1,
-        useCORS: true,
-        scrollY: 0
-    },
-
-    jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-    },
-
-    pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy']
     }
 
-};
-
-        html2pdf()
-            .set(opt)
-            .from(htmlPDF)
-            .save();
-
-        return;
-    }
-
-    /* =========================================
-       PDF KMS
-    ========================================= */
-
-    const htmlPDF = `
-
-    <html>
-
-    <head>
-
-        <meta charset="UTF-8">
-
-        <style>
-
-            body{
-    font-family:Arial;
-    padding:18px;
-    color:#333;
-    font-size:13px;
-}
-
-            h1{
-    color:#2e7d32;
-    font-size:28px;
-    margin:0 0 12px 0;
-}
-
-            table{
-                width:100%;
-                border-collapse:collapse;
-                margin-top:20px;
-            }
-
-            th{
-    background:#2e7d32;
-    color:white;
-    padding:5px;
-    font-size:11px;
-}
-
-            td{
-    border:1px solid #ccc;
-    padding:4px;
-    font-size:10px;
-}
-
-        </style>
-
-    </head>
-
-    <body>
-
-        <div style="display:flex; justify-content:space-between;">
-            <div>
-                <b>Gestão de Despesas</b>
-            </div>
-        </div>
-
-        <hr>
-
-        <h1>Nota de Despesa</h1>
-
-        <p><b>Submetido por:</b> ${f.CriadoPorNome}</p>
-
-        <p><b>Aprovado por:</b> ${f.AprovadoPorNome || "—"}</p>
-
-        <p><b>Estado:</b> ${f.Estado}</p>
-
-        <p><b>Data/Hora:</b> ${dataHora}</p>
-
-        <p><b>Total KMs:</b> ${f.TotalKMs}</p>
-
-        <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
-
-        <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
-
-        <table>
-
-            <tr>
-
-                <th>Data</th>
-
-                <th>Origem</th>
-
-                <th>Destino</th>
-
-                <th>Justificação</th>
-
-                <th>KMs</th>
-
-            </tr>
-
-            ${linhas.map(l => `
-
-                <tr>
-
-                    <td>${l.data}</td>
-
-                    <td>${l.origem}</td>
-
-                    <td>${l.destino}</td>
-
-                    <td>${l.justificacao}</td>
-
-                    <td>${l.kms}</td>
-
-                </tr>
-
-            `).join("")}
-
-        </table>
-
-    </body>
-
-    </html>
-    `;
-
-    const opt = {
-
-    margin: [8,8,8,8],
-
-    filename: 'Nota_Despesa.pdf',
-
-    image: {
-        type: 'jpeg',
-        quality: 1
-    },
-
-    html2canvas: {
-        scale: 1,
-        useCORS: true,
-        scrollY: 0
-    },
-
-    jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-    },
-
-    pagebreak: {
-        mode: ['avoid-all', 'css', 'legacy']
-    }
-
-};
-
-    html2pdf()
-        .set(opt)
-        .from(htmlPDF)
-        .save();
+    pdf.save("Nota_Despesa.pdf");
 
 };
 /* =============================
