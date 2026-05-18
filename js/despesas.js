@@ -753,7 +753,7 @@ pdf.addImage(
     "PNG",
     155,
     4,
-    35,
+    30,
     18
 );
 pdf.setTextColor(255,255,255);
