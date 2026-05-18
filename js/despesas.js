@@ -703,6 +703,7 @@ window.verPreviewKM = function(){
 window.downloadPDF = async function(){
 
     const { jsPDF } = window.jspdf;
+    const { PDFDocument } = PDFLib;
 
     const modal = document.getElementById("modalKM");
 
@@ -734,6 +735,10 @@ window.downloadPDF = async function(){
 
     const linhas =
         JSON.parse(f.LinhasJSON || "[]");
+
+    /* =========================================
+       PDF PRINCIPAL
+    ========================================= */
 
     const pdf = new jsPDF("p","mm","a4");
 
@@ -770,157 +775,110 @@ window.downloadPDF = async function(){
 
     }
 
-    /* =========================================
-       KMS
-    ========================================= */
+    novaLinha("");
 
-    if(f.TipoDocumento === "KMS"){
+    novaLinha(
+        "Total: " +
+        Number(f.TotalRecebido || 0).toFixed(2) +
+        " €"
+    );
 
-        novaLinha("");
+    novaLinha("");
 
-        novaLinha("Total KMs: " + (f.TotalKMs || 0));
+    for(const [index, l] of linhas.entries()){
 
-        novaLinha("Valor/KM: " + (f.ValorPorKM || 0) + " €");
+        pdf.setFontSize(12);
 
         novaLinha(
-            "Total: " +
-            Number(f.TotalRecebido || 0).toFixed(2) +
+            "Despesa " + (index + 1),
+            8
+        );
+
+        pdf.setFontSize(10);
+
+        novaLinha("Data: " + (l.data || "-"));
+        novaLinha("Rubrica: " + (l.rubrica || "-"));
+        novaLinha("Descrição: " + (l.descricao || "-"));
+
+        novaLinha(
+            "Valor: " +
+            Number(l.valor || 0).toFixed(2) +
             " €"
         );
 
-        novaLinha("");
-
-        linhas.forEach((l, index) => {
-
-            pdf.setFontSize(12);
+        if(l.ficheiroNome){
 
             novaLinha(
-                "Linha " + (index + 1),
-                8
+                "Documento: " +
+                l.ficheiroNome
             );
 
-            pdf.setFontSize(10);
-
-            novaLinha("Data: " + (l.data || "-"));
-            novaLinha("Origem: " + (l.origem || "-"));
-            novaLinha("Destino: " + (l.destino || "-"));
-            novaLinha("Justificação: " + (l.justificacao || "-"));
-            novaLinha("KMs: " + (l.kms || 0));
-
-            novaLinha("");
-
-        });
-
-    }
-
-    /* =========================================
-       DESPESAS
-    ========================================= */
-
-    else{
+        }
 
         novaLinha("");
 
-        novaLinha(
-            "Total: " +
-            Number(f.TotalRecebido || 0).toFixed(2) +
-            " €"
-        );
+        /* =========================================
+           IMAGENS
+        ========================================= */
 
-        novaLinha("");
+        if(l.ficheiroDownloadUrl){
 
-        for(const [index, l] of linhas.entries()){
+            try{
 
-            pdf.setFontSize(12);
+                const response =
+                    await fetch(
+                        l.ficheiroDownloadUrl
+                    );
 
-            novaLinha(
-                "Despesa " + (index + 1),
-                8
-            );
+                const blob =
+                    await response.blob();
 
-            pdf.setFontSize(10);
+                /* =============================
+                   IMAGENS
+                ============================= */
 
-            novaLinha("Data: " + (l.data || "-"));
-            novaLinha("Rubrica: " + (l.rubrica || "-"));
-            novaLinha("Descrição: " + (l.descricao || "-"));
+                if(blob.type.startsWith("image/")){
 
-            novaLinha(
-                "Valor: " +
-                Number(l.valor || 0).toFixed(2) +
-                " €"
-            );
+                    const reader =
+                        new FileReader();
 
-            if(l.ficheiroNome){
+                    const base64 =
+                        await new Promise(resolve => {
 
-                novaLinha(
-                    "Documento: " +
-                    l.ficheiroNome
-                );
+                            reader.onloadend =
+                                () => resolve(reader.result);
 
-            }
+                            reader.readAsDataURL(blob);
 
-            novaLinha("");
+                        });
 
-            /* =============================
-               ANEXAR IMAGENS AO PDF
-            ============================= */
+                    if(y > 180){
 
-            if(l.ficheiroDownloadUrl){
+                        pdf.addPage();
 
-                try{
-
-                    const response =
-                        await fetch(
-                            l.ficheiroDownloadUrl
-                        );
-
-                    const blob =
-                        await response.blob();
-
-                    if(blob.type.startsWith("image/")){
-
-                        const reader =
-                            new FileReader();
-
-                        const base64 =
-                            await new Promise(resolve => {
-
-                                reader.onloadend =
-                                    () => resolve(reader.result);
-
-                                reader.readAsDataURL(blob);
-
-                            });
-
-                        if(y > 180){
-
-                            pdf.addPage();
-
-                            y = 15;
-
-                        }
-
-                        pdf.addImage(
-                            base64,
-                            "JPEG",
-                            15,
-                            y,
-                            90,
-                            60
-                        );
-
-                        y += 70;
+                        y = 15;
 
                     }
 
-                }catch(e){
-
-                    console.log(
-                        "Erro imagem:",
-                        e
+                    pdf.addImage(
+                        base64,
+                        "JPEG",
+                        15,
+                        y,
+                        90,
+                        60
                     );
 
+                    y += 70;
+
                 }
+
+            }catch(e){
+
+                console.log(
+                    "Erro imagem:",
+                    e
+                );
 
             }
 
@@ -928,7 +886,108 @@ window.downloadPDF = async function(){
 
     }
 
-    pdf.save("Nota_Despesa.pdf");
+    /* =========================================
+       EXPORTAR PDF BASE
+    ========================================= */
+
+    const pdfBlob =
+        pdf.output("blob");
+
+    const mergedPdf =
+        await PDFDocument.create();
+
+    const baseBytes =
+        await pdfBlob.arrayBuffer();
+
+    const basePdf =
+        await PDFDocument.load(baseBytes);
+
+    const basePages =
+        await mergedPdf.copyPages(
+            basePdf,
+            basePdf.getPageIndices()
+        );
+
+    basePages.forEach(page => {
+        mergedPdf.addPage(page);
+    });
+
+    /* =========================================
+       ANEXAR PDFs
+    ========================================= */
+
+    for(const l of linhas){
+
+        if(!l.ficheiroDownloadUrl)
+            continue;
+
+        try{
+
+            const response =
+                await fetch(
+                    l.ficheiroDownloadUrl
+                );
+
+            const blob =
+                await response.blob();
+
+            if(blob.type === "application/pdf"){
+
+                const pdfBytes =
+                    await blob.arrayBuffer();
+
+                const anexoPdf =
+                    await PDFDocument.load(
+                        pdfBytes
+                    );
+
+                const paginas =
+                    await mergedPdf.copyPages(
+                        anexoPdf,
+                        anexoPdf.getPageIndices()
+                    );
+
+                paginas.forEach(p => {
+                    mergedPdf.addPage(p);
+                });
+
+            }
+
+        }catch(e){
+
+            console.log(
+                "Erro PDF:",
+                e
+            );
+
+        }
+
+    }
+
+    /* =========================================
+       DOWNLOAD FINAL
+    ========================================= */
+
+    const finalBytes =
+        await mergedPdf.save();
+
+    const finalBlob =
+        new Blob(
+            [finalBytes],
+            { type: "application/pdf" }
+        );
+
+    const url =
+        URL.createObjectURL(finalBlob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download = "Nota_Despesa_Final.pdf";
+
+    a.click();
 
 };
 /* =============================
