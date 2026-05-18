@@ -751,9 +751,9 @@ pdf.rect(0, 0, paginaLargura, 28, "F");
 pdf.addImage(
     logoBase64,
     "PNG",
-    150,
+    155,
     4,
-    40,
+    35,
     18
 );
 pdf.setTextColor(255,255,255);
