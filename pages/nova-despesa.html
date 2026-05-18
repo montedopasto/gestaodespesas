@@ -103,7 +103,38 @@ Nova Nota de Despesa
 </div>
 
 <div id="areaDespesas" style="display:none; margin-top:20px;">
+
     <h3>Outras despesas</h3>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Rubrica</th>
+                <th>Descrição</th>
+                <th>Valor (€)</th>
+                <th>Fatura</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody id="linhasDespesas"></tbody>
+
+    </table>
+
+    <br>
+
+    <button onclick="addLinhaDespesa()">
+        + Adicionar linha
+    </button>
+
+    <br><br>
+
+    <p>
+        <b>Total:</b>
+        <span id="totalDespesas">0.00 €</span>
+    </p>
+
 </div>
 
 
