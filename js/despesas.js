@@ -540,7 +540,72 @@ carimbo.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
 console.log("LINHAS RAW:", f.LinhasJSON);
 const linhas = JSON.parse(f.LinhasJSON || "[]");
+if(f.TipoDocumento === "DESPESA"){
 
+    let html = `
+
+    <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
+
+    <br>
+
+    <table style="width:100%">
+
+        <tr>
+            <th>Data</th>
+            <th>Rubrica</th>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Fatura</th>
+        </tr>
+    `;
+
+    linhas.forEach(l => {
+
+        html += `
+
+        <tr>
+
+            <td>${l.data}</td>
+
+            <td>${l.rubrica}</td>
+
+            <td>${l.descricao}</td>
+
+            <td>${Number(l.valor).toFixed(2)} €</td>
+
+            <td>
+
+                ${l.ficheiroUrl ? `
+
+                    <a href="${l.ficheiroUrl}"
+                       target="_blank"
+                       style="
+                       background:#2563eb;
+                       color:white;
+                       padding:6px 10px;
+                       border-radius:6px;
+                       text-decoration:none;
+                       font-size:12px;
+                    ">
+                        Abrir
+                    </a>
+
+                ` : "-"}
+
+            </td>
+
+        </tr>
+        `;
+    });
+
+    html += `</table>`;
+
+    document.getElementById("conteudoKM").innerHTML = html;
+
+    document.getElementById("modalKM").style.display = "block";
+
+    return;
+}
     let html = `
         <p><b>Total KMs:</b> ${f.TotalKMs}</p>
         <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
