@@ -789,8 +789,40 @@ novaLinha(f.AprovadoPorNome || "-");
 
 pdf.setFont(undefined, "bold");
 novaLinha("Estado:");
+
+if(f.Estado === "Aprovado"){
+
+    pdf.setFillColor(46,125,50);
+
+}
+else if(f.Estado === "Rejeitado"){
+
+    pdf.setFillColor(198,40,40);
+
+}
+else{
+
+    pdf.setFillColor(180,137,0);
+
+}
+
+pdf.roundedRect(15, y, 45, 10, 2, 2, "F");
+
+pdf.setTextColor(255,255,255);
+
+pdf.setFont(undefined, "bold");
+
+pdf.text(
+    (f.Estado || "-").toUpperCase(),
+    20,
+    y + 6.5
+);
+
+pdf.setTextColor(0,0,0);
+
 pdf.setFont(undefined, "normal");
-novaLinha(f.Estado || "-");
+
+y += 16;
 
 pdf.setFont(undefined, "bold");
 novaLinha("Data/Hora:");
