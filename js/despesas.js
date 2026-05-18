@@ -833,3 +833,14 @@ function calcularTotalDespesas(){
         total.toFixed(2) + " €";
 
 }
+/* =============================
+   SEGUNDO APROVADOR DESPESA
+============================= */
+
+function mostrarSegundoAprovadorDespesa(){
+
+    document.getElementById(
+        "segundoAprovadorDespesaBox"
+    ).style.display = "block";
+
+}
