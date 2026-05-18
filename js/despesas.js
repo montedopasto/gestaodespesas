@@ -937,10 +937,11 @@ window.downloadPDF = async function(){
             }
 
             th{
-                background:#2e7d32;
-                color:white;
-                padding:8px;
-            }
+    background:#2e7d32;
+    color:white;
+    padding:5px;
+    font-size:11px;
+}
 
             td{
                 border:1px solid #ccc;
