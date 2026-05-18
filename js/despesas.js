@@ -422,7 +422,12 @@ const tabela = document.getElementById("tabelaDespesas");
 if(!tabela) return;
 
 tabela.innerHTML = "";
+items.sort((a,b) => {
 
+    return new Date(b.fields.Created)
+        - new Date(a.fields.Created);
+
+});
 items.forEach(item => {
 
     const f = item.fields;
