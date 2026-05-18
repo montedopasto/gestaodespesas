@@ -1013,3 +1013,47 @@ async function guardarOutrasDespesas(){
     window.location.href = "dashboard.html";
 
 }
+/* =============================
+   UPLOAD FICHEIRO SHAREPOINT
+============================= */
+
+async function uploadFicheiroDespesa(file){
+
+    const token = await getAccessToken();
+
+    const site = await obterSiteApp();
+
+    const siteId = site.id;
+
+    const nomeFinal =
+        Date.now() + "_" + file.name;
+
+    const uploadResp = await fetch(
+
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/AnexosDespesas/${nomeFinal}:/content`,
+
+        {
+            method:"PUT",
+
+            headers:{
+                Authorization:"Bearer " + token
+            },
+
+            body:file
+        }
+    );
+
+    if(!uploadResp.ok){
+
+        throw new Error("Erro upload ficheiro");
+
+    }
+
+    const uploadData = await uploadResp.json();
+
+    return {
+        nome: nomeFinal,
+        url: uploadData.webUrl
+    };
+
+}
