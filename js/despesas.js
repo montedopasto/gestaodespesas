@@ -763,7 +763,7 @@ pdf.text("NOTA DE DESPESA", 15, 18);
 pdf.setTextColor(0,0,0);
 
 pdf.setDrawColor(220,220,220);
-pdf.roundedRect(10, 35, 190, 45, 3, 3);
+pdf.roundedRect(10, 35, 190, 80, 3, 3);
 
 pdf.setFontSize(11);
 
