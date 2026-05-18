@@ -748,7 +748,14 @@ window.downloadPDF = async function(){
 
 pdf.setFillColor(34, 139, 34);
 pdf.rect(0, 0, paginaLargura, 28, "F");
-
+pdf.addImage(
+    logoBase64,
+    "PNG",
+    150,
+    4,
+    40,
+    18
+);
 pdf.setTextColor(255,255,255);
 pdf.setFontSize(22);
 pdf.text("NOTA DE DESPESA", 15, 18);
