@@ -763,7 +763,183 @@ window.downloadPDF = async function(){
             ${f.JustificacaoRejeicao}
         </div>
         ` : ""}
+if(f.TipoDocumento === "DESPESA"){
 
+    const htmlPDF = `
+    <html>
+    <head>
+        <meta charset="UTF-8">
+
+        <style>
+
+            body{
+                font-family:Arial;
+                padding:30px;
+                color:#333;
+            }
+
+            h1{
+                color:#2e7d32;
+            }
+
+            table{
+                width:100%;
+                border-collapse:collapse;
+                margin-top:20px;
+            }
+
+            th{
+                background:#2e7d32;
+                color:white;
+                padding:8px;
+            }
+
+            td{
+                border:1px solid #ccc;
+                padding:6px;
+            }
+
+            .btn-fatura{
+                background:#2563eb;
+                color:white;
+                padding:6px 10px;
+                border-radius:6px;
+                text-decoration:none;
+                font-size:12px;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <div style="display:flex; justify-content:space-between;">
+
+            <div>
+                <b>Gestão de Despesas</b>
+            </div>
+
+        </div>
+
+        <hr>
+
+        <h1>Nota de Despesa</h1>
+
+        <p><b>Submetido por:</b> ${f.CriadoPorNome}</p>
+
+        <p><b>Aprovado por:</b> ${f.AprovadoPorNome || "—"}</p>
+
+        <p><b>Estado:</b> ${f.Estado}</p>
+
+        <p><b>Data/Hora:</b> ${dataHora}</p>
+
+        ${
+            f.Estado === "Rejeitado" &&
+            f.JustificacaoRejeicao
+            ?
+            `
+            <div style="
+                margin-top:10px;
+                padding:10px;
+                background:#ffecec;
+                border:1px solid #f5c2c2;
+            ">
+                <b>Justificação:</b><br>
+                ${f.JustificacaoRejeicao}
+            </div>
+            `
+            :
+            ""
+        }
+
+        <br>
+
+        <p>
+            <b>Total:</b>
+            ${Number(f.TotalRecebido).toFixed(2)} €
+        </p>
+
+        <table>
+
+            <tr>
+
+                <th>Data</th>
+
+                <th>Rubrica</th>
+
+                <th>Descrição</th>
+
+                <th>Valor</th>
+
+                <th>Fatura</th>
+
+            </tr>
+
+            ${linhas.map(l => `
+
+                <tr>
+
+                    <td>${l.data}</td>
+
+                    <td>${l.rubrica}</td>
+
+                    <td>${l.descricao}</td>
+
+                    <td>${Number(l.valor).toFixed(2)} €</td>
+
+                    <td>
+
+                        ${
+                            l.ficheiroUrl
+                            ?
+                            `
+                            <a
+                                href="${l.ficheiroUrl}"
+                                class="btn-fatura"
+                            >
+                                Abrir
+                            </a>
+                            `
+                            :
+                            "-"
+                        }
+
+                    </td>
+
+                </tr>
+
+            `).join("")}
+
+        </table>
+
+    </body>
+
+    </html>
+    `;
+
+    const opt = {
+
+        margin: 10,
+
+        filename: 'Nota_Despesa.pdf',
+
+        html2canvas: {
+            scale: 2
+        },
+
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait'
+        }
+
+    };
+
+    html2pdf().set(opt).from(htmlPDF).save();
+
+    return;
+}
         <p><b>Total KMs:</b> ${f.TotalKMs}</p>
         <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
         <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
