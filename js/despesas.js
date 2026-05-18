@@ -448,10 +448,40 @@ items.forEach(item => {
     <td>${Number(f.TotalRecebido).toFixed(2)} €</td>
     <td>${aprovadores || "-"}</td>
     <td>
-        <span class="estado ${f.Estado}">
-            ${f.Estado}
-        </span>
-    </td>
+
+    <span style="
+        padding:6px 12px;
+        border-radius:999px;
+        font-weight:700;
+        font-size:13px;
+
+        ${
+            f.Estado === "Aprovado"
+            ?
+            `
+            background:#e8f5e9;
+            color:#2e7d32;
+            `
+            :
+            f.Estado === "Rejeitado"
+            ?
+            `
+            background:#ffebee;
+            color:#c62828;
+            `
+            :
+            `
+            background:#fff8e1;
+            color:#b08900;
+            `
+        }
+    ">
+
+        ${f.Estado}
+
+    </span>
+
+</td>
     <td>
         <button onclick="verDetalheKM('${item.id}')" class="btn-icon" title="Ver detalhe">
             <i data-lucide="file-text"></i>
