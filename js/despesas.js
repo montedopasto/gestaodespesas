@@ -1002,21 +1002,32 @@ window.downloadPDF = async function(){
 
     const opt = {
 
-        margin:10,
+    margin: [8,8,8,8],
 
-        filename:'Nota_Despesa.pdf',
+    filename: 'Nota_Despesa.pdf',
 
-        html2canvas:{
-            scale:2
-        },
+    image: {
+        type: 'jpeg',
+        quality: 1
+    },
 
-        jsPDF:{
-            unit:'mm',
-            format:'a4',
-            orientation:'portrait'
-        }
+    html2canvas: {
+        scale: 1,
+        useCORS: true,
+        scrollY: 0
+    },
 
-    };
+    jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+    },
+
+    pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy']
+    }
+
+};
 
     html2pdf()
         .set(opt)
