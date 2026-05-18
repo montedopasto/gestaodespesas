@@ -844,3 +844,41 @@ function mostrarSegundoAprovadorDespesa(){
     ).style.display = "block";
 
 }
+/* =============================
+   APROVADORES OUTRAS DESPESAS
+============================= */
+
+async function carregarAprovadoresOutrasDespesas(){
+
+    const aprovadores = await obterAprovadores();
+
+    const select1 = document.getElementById("aprovador1Despesa");
+    const select2 = document.getElementById("aprovador2Despesa");
+
+    if(!select1) return;
+
+    select1.innerHTML = `<option value="">Selecionar</option>`;
+
+    if(select2){
+        select2.innerHTML = `<option value="">Selecionar</option>`;
+    }
+
+    aprovadores.forEach(a => {
+
+        const opt1 = document.createElement("option");
+        opt1.value = a.email;
+        opt1.textContent = a.nome;
+        select1.appendChild(opt1);
+
+        if(select2){
+
+            const opt2 = document.createElement("option");
+            opt2.value = a.email;
+            opt2.textContent = a.nome;
+            select2.appendChild(opt2);
+
+        }
+
+    });
+
+}
