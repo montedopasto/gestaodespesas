@@ -741,6 +741,9 @@ window.downloadPDF = async function(){
     ========================================= */
 
     const pdf = new jsPDF("p","mm","a4");
+   const logoBase64 = await carregarImagemBase64(
+    "../assets/logo-monte-do-pasto.png"
+);
    const paginaLargura = 210;
 
 pdf.setFillColor(34, 139, 34);
