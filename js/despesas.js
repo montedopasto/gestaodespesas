@@ -922,12 +922,29 @@ async function guardarOutrasDespesas(){
             continue;
         }
 
-        linhas.push({
-            data,
-            rubrica,
-            descricao,
-            valor
-        });
+        let ficheiroInfo = null;
+
+if(ficheiro){
+
+    ficheiroInfo =
+        await uploadFicheiroDespesa(ficheiro);
+
+}
+
+linhas.push({
+
+    data,
+    rubrica,
+    descricao,
+    valor,
+
+    ficheiroNome:
+        ficheiroInfo?.nome || "",
+
+    ficheiroUrl:
+        ficheiroInfo?.url || ""
+
+});
 
     }
 
