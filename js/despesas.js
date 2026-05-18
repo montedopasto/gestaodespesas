@@ -916,7 +916,8 @@ async function guardarOutrasDespesas(){
             Number(
                 tr.querySelector(".valorDespesa")?.value
             ) || 0;
-
+      const ficheiro =
+    tr.querySelector(".ficheiroDespesa")?.files[0];
         if(!data || !rubrica || !descricao || valor <= 0){
             continue;
         }
