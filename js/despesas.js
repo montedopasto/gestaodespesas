@@ -107,7 +107,15 @@ for(const tr of rows){
     /* totais */
     let totalKMs = 0;
     linhas.forEach(l => totalKMs += l.kms);
+const matriculaVeiculo =
+    document.getElementById("matriculaVeiculo")
+    ?.value
+    .trim();
 
+if(!matriculaVeiculo){
+    alert("Tem de indicar a matrícula do veículo.");
+    return;
+}
     const valorKM = Number(document.getElementById("valorKM").value) || 0;
     const totalRecebido = totalKMs * valorKM;
 
@@ -129,7 +137,7 @@ if(!aprovador1){
     CriadoPorNome: utilizador.displayName,
     CriadoPorEmail: utilizador.mail || utilizador.userPrincipalName,
 
-    // ❌ REMOVIDO DataCriacao
+    MatriculaVeiculo: matriculaVeiculo,
 
     TotalKMs: totalKMs,
     ValorPorKM: valorKM,
@@ -642,9 +650,11 @@ if(f.TipoDocumento === "DESPESA"){
     return;
 }
     let html = `
-        <p><b>Total KMs:</b> ${f.TotalKMs}</p>
-        <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
-        <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
+        let html = `
+    <p><b>Matrícula:</b> ${f.MatriculaVeiculo || "-"}</p>
+    <p><b>Total KMs:</b> ${f.TotalKMs}</p>
+    <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
+    <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
 
         <br>
 
