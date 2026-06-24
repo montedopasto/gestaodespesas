@@ -650,23 +650,22 @@ if(f.TipoDocumento === "DESPESA"){
     return;
 }
     let html = `
-        let html = `
     <p><b>Matrícula:</b> ${f.MatriculaVeiculo || "-"}</p>
     <p><b>Total KMs:</b> ${f.TotalKMs}</p>
     <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
     <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
 
-        <br>
+    <br>
 
-        <table style="width:100%">
-            <tr>
-                <th>Data</th>
-                <th>Origem</th>
-                <th>Destino</th>
-                <th>Justificação</th>
-                <th>KMs</th>
-            </tr>
-    `;
+    <table style="width:100%">
+        <tr>
+            <th>Data</th>
+            <th>Origem</th>
+            <th>Destino</th>
+            <th>Justificação</th>
+            <th>KMs</th>
+        </tr>
+`;
 
     linhas.forEach(l => {
         html += `
