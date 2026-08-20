@@ -60,7 +60,7 @@ async function carregarPagamentos(){
     if(!await validarAcessoPagamentos()) return;
 
     const tabela = document.getElementById("tabelaPagamentos");
-    tabela.innerHTML = '<tr><td colspan="6" class="pagamentos-vazio">A carregar...</td></tr>';
+    tabela.innerHTML = '<tr><td colspan="7" class="pagamentos-vazio">A carregar...</td></tr>';
 
     try{
         const token = await getAccessToken();
@@ -83,7 +83,7 @@ async function carregarPagamentos(){
         renderizarPagamentos();
     }catch(erro){
         console.error("Erro ao carregar pagamentos:", erro);
-        tabela.innerHTML = '<tr><td colspan="6" class="pagamentos-vazio">Não foi possível carregar os pagamentos.</td></tr>';
+        tabela.innerHTML = '<tr><td colspan="7" class="pagamentos-vazio">Não foi possível carregar os pagamentos.</td></tr>';
     }
 }
 
@@ -125,7 +125,7 @@ function renderizarPagamentos(){
 
     const tabela = document.getElementById("tabelaPagamentos");
     if(!filtrados.length){
-        tabela.innerHTML = '<tr><td colspan="6" class="pagamentos-vazio">Não existem despesas neste filtro.</td></tr>';
+        tabela.innerHTML = '<tr><td colspan="7" class="pagamentos-vazio">Não existem despesas neste filtro.</td></tr>';
         return;
     }
 
@@ -134,6 +134,7 @@ function renderizarPagamentos(){
         const paga = despesaEstaPaga(f);
         return `
             <tr>
+                <td>${escaparHTML(f.NumeroNota || "-")}</td>
                 <td>${formatarData(f.Created)}</td>
                 <td>${escaparHTML(f.CriadoPorNome || "-")}</td>
                 <td>${escaparHTML(f.TipoDocumento === "KMS" ? "KMs" : "Despesa")}</td>
@@ -166,6 +167,7 @@ async function abrirDetalhePagamento(id){
 
         let detalhe = `
             <div class="detalhe-resumo">
+                <p><b>Número:</b> ${escaparHTML(f.NumeroNota || "-")}</p>
                 <p><b>Colaborador:</b> ${escaparHTML(f.CriadoPorNome || "-")}</p>
                 <p><b>Data:</b> ${formatarData(f.Created)}</p>
                 <p><b>Tipo:</b> ${isKM ? "KMs" : "Despesa"}</p>

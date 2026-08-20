@@ -98,6 +98,47 @@ async function obterNomeColaboradorDaNota(utilizador){
     return nomeIndicado || utilizador.displayName;
 }
 
+async function obterTodasNotasDespesa(token, siteId){
+
+    let url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/NotasDespesa/items?expand=fields`;
+    const items = [];
+
+    while(url){
+        const resp = await fetch(url, {
+            headers:{ Authorization:"Bearer " + token }
+        });
+
+        if(!resp.ok){
+            throw new Error("Não foi possível obter a numeração das notas.");
+        }
+
+        const data = await resp.json();
+        items.push(...(data.value || []));
+        url = data["@odata.nextLink"] || "";
+    }
+
+    return items;
+}
+
+async function gerarNumeroNota(token, siteId){
+
+    const ano = new Date().getFullYear();
+    const prefixo = `ND-${ano}-`;
+    const items = await obterTodasNotasDespesa(token, siteId);
+
+    const ultimoNumero = items.reduce((maior, item) => {
+        const numero = item.fields?.NumeroNota || "";
+        if(!numero.startsWith(prefixo)) return maior;
+
+        const sequencia = Number(numero.slice(prefixo.length));
+        return Number.isInteger(sequencia) && sequencia > maior
+            ? sequencia
+            : maior;
+    }, 0);
+
+    return prefixo + String(ultimoNumero + 1).padStart(6, "0");
+}
+
 async function guardarDespesaKM(){
 
     const utilizador = await testarGraph();
@@ -106,6 +147,7 @@ async function guardarDespesaKM(){
     const site = await obterSiteApp();
 
     const siteId = site.id;
+    const numeroNota = await gerarNumeroNota(token, siteId);
 
     const linhas = [];
 
@@ -166,7 +208,8 @@ if(!aprovador1){
 }
     const body = {
         fields: {
-    Title: "Nota KM - " + new Date().toLocaleDateString("pt-PT"),
+    Title: numeroNota + " - Nota KM",
+    NumeroNota: numeroNota,
     TipoDocumento: "KMS",
     CriadoPorNome: nomeColaborador,
     CriadoPorEmail: utilizador.mail || utilizador.userPrincipalName,
@@ -205,7 +248,7 @@ if(!resp.ok){
     return;
 }
 
-alert("✅ Nota de despesa guardada com sucesso!");
+    alert("✅ Nota de despesa guardada com sucesso!");
 
 window.location.href = "dashboard.html";
 
@@ -316,6 +359,7 @@ async function carregarAprovacoesDespesas(){
         const tr = document.createElement("tr");
 
       tr.innerHTML = `
+    <td>${f.NumeroNota || "-"}</td>
     <td>${new Date(f.Created).toLocaleDateString("pt-PT")}</td>
     <td>${f.CriadoPorNome}</td>
     <td>${Number(f.TotalRecebido).toFixed(2)} €</td>
@@ -485,6 +529,7 @@ items.forEach(item => {
     .join(" / ");
 
     linha.innerHTML = `
+    <td>${f.NumeroNota || "-"}</td>
     <td>${new Date(f.Created).toLocaleDateString("pt-PT")}</td>
     <td>${f.CriadoPorNome}</td>
     <td>${Number(f.TotalRecebido).toFixed(2)} €</td>
@@ -621,6 +666,7 @@ if(f.TipoDocumento === "DESPESA"){
 
     let html = `
 
+    <p><b>Número:</b> ${f.NumeroNota || "-"}</p>
     <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
 
     <br>
@@ -684,6 +730,7 @@ if(f.TipoDocumento === "DESPESA"){
     return;
 }
     let html = `
+    <p><b>Número:</b> ${f.NumeroNota || "-"}</p>
     <p><b>Matrícula:</b> ${f.MatriculaVeiculo || "-"}</p>
     <p><b>Total KMs:</b> ${f.TotalKMs}</p>
     <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
@@ -864,6 +911,11 @@ pdf.setFontSize(11);
     novaLinha("Nota de Despesa", 10);
 
     pdf.setFontSize(11);
+
+    pdf.setFont(undefined, "bold");
+    novaLinha("Número:");
+    pdf.setFont(undefined, "normal");
+    novaLinha(f.NumeroNota || "-");
 
     pdf.setFont(undefined, "bold");
 novaLinha("Submetido por:");
@@ -1299,11 +1351,14 @@ async function guardarOutrasDespesas(){
     const site = await obterSiteApp();
 
     const siteId = site.id;
+    const numeroNota = await gerarNumeroNota(token, siteId);
 
     const rows =
         document.querySelectorAll("#linhasDespesas tr");
 
     const linhas = [];
+
+    let indiceAnexo = 0;
 
     for(const tr of rows){
 
@@ -1330,8 +1385,10 @@ async function guardarOutrasDespesas(){
 
 if(ficheiro){
 
+    indiceAnexo++;
+
     ficheiroInfo =
-        await uploadFicheiroDespesa(ficheiro);
+        await uploadFicheiroDespesa(ficheiro, numeroNota, indiceAnexo);
 
 }
 
@@ -1386,8 +1443,9 @@ linhas.push({
         fields: {
 
             Title:
-                "Despesa - " +
-                new Date().toLocaleDateString("pt-PT"),
+                numeroNota + " - Despesa",
+
+            NumeroNota: numeroNota,
 
             TipoDocumento: "DESPESA",
 
@@ -1442,7 +1500,7 @@ linhas.push({
    UPLOAD FICHEIRO SHAREPOINT
 ============================= */
 
-async function uploadFicheiroDespesa(file){
+async function uploadFicheiroDespesa(file, numeroNota, indice){
 
     const token = await getAccessToken();
 
@@ -1450,8 +1508,19 @@ async function uploadFicheiroDespesa(file){
 
     const siteId = site.id;
 
+    const partesNome = file.name.split(".");
+    const extensao = partesNome.length > 1
+        ? "." + partesNome.pop().toLowerCase().replace(/[^a-z0-9]/g, "")
+        : "";
+    const nomeBase = partesNome.join(".")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80) || "anexo";
+
     const nomeFinal =
-        Date.now() + "_" + file.name;
+        `${numeroNota}-${String(indice).padStart(2, "0")}-${Date.now()}-${nomeBase}${extensao}`;
 
     const uploadResp = await fetch(
 
