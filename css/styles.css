@@ -698,3 +698,116 @@ margin-bottom:5px;
 .btn-rejeitar:hover{
     background:#fde2e5;
 }
+
+/* ================= PAGAMENTOS ================= */
+
+.pagamentos-content .card p{font-size:24px;}
+
+.pagamentos-filtros{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:16px;
+margin-bottom:18px;
+}
+
+.grupo-filtros{display:flex; gap:8px;}
+
+.filtro-pagamento{
+border:1px solid #cbd5e1;
+background:white;
+color:#334155;
+padding:9px 15px;
+border-radius:999px;
+font-weight:600;
+cursor:pointer;
+}
+
+.filtro-pagamento.ativo{
+background:#1e293b;
+border-color:#1e293b;
+color:white;
+}
+
+#pesquisaPagamentos{
+width:min(320px, 100%);
+padding:10px 12px;
+border:1px solid #cbd5e1;
+border-radius:10px;
+}
+
+.estado-pagamento{
+display:inline-block;
+padding:6px 12px;
+border-radius:999px;
+font-size:13px;
+font-weight:700;
+}
+
+.estado-pagamento.por-pagar{background:#fff8e1; color:#9a6700;}
+.estado-pagamento.pago{background:#e8f5e9; color:#2e7d32;}
+.pagamentos-vazio{text-align:center; color:#64748b; padding:28px;}
+
+.modal-pagamento{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.6);
+z-index:999;
+backdrop-filter:blur(4px);
+padding:40px 20px;
+overflow:auto;
+}
+
+.modal-pagamento-conteudo{
+background:white;
+width:min(900px, 100%);
+margin:0 auto;
+padding:24px;
+border-radius:16px;
+box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+
+.modal-pagamento-cabecalho{
+display:flex;
+align-items:center;
+justify-content:space-between;
+border-bottom:1px solid #e2e8f0;
+margin-bottom:18px;
+padding-bottom:14px;
+}
+
+.modal-pagamento-cabecalho h3{margin:0;}
+.modal-pagamento-cabecalho button{border:0; background:none; font-size:20px; cursor:pointer;}
+.detalhe-resumo{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:0 24px;}
+
+.bloco-pagamento{
+margin-top:24px;
+padding-top:20px;
+border-top:2px solid #e2e8f0;
+}
+
+.bloco-pagamento label{display:block; font-weight:600; margin:12px 0 7px;}
+.bloco-pagamento label span{font-weight:400; color:#64748b;}
+.bloco-pagamento textarea{width:100%; box-sizing:border-box; padding:12px; border:1px solid #cbd5e1; border-radius:10px; resize:vertical;}
+
+.btn-confirmar-pagamento{
+margin-top:14px;
+background:#2e7d32;
+color:white;
+border:0;
+padding:11px 18px;
+border-radius:9px;
+font-weight:700;
+cursor:pointer;
+}
+
+.btn-confirmar-pagamento:disabled{opacity:.65; cursor:wait;}
+.pagamento-confirmado{background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:16px;}
+.pagamento-confirmado strong{color:#166534; font-size:18px;}
+
+@media (max-width: 760px){
+    .pagamentos-filtros{align-items:stretch; flex-direction:column;}
+    .grupo-filtros{flex-wrap:wrap;}
+    .detalhe-resumo{grid-template-columns:1fr;}
+}

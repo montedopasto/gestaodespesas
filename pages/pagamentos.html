@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamentos - Gestão de Despesas</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="app">
+    <header class="topbar">
+        <div class="logo-area">
+            <img src="../assets/logo-monte-do-pasto.png" class="logo" alt="Monte do Pasto">
+            <div class="titulo-app">Gestão de Despesas</div>
+        </div>
+        <div class="topbar-direita"><div id="dataHora"></div><div id="utilizador"></div></div>
+    </header>
+
+    <div class="main">
+        <aside class="sidebar">
+            <button class="nav-btn" onclick="window.location.href='dashboard.html'"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+            <button class="nav-btn" onclick="window.location.href='nova-despesa.html'"><i data-lucide="receipt"></i><span>Nova Nota de Despesa</span></button>
+            <button class="nav-btn" onclick="window.location.href='aprovacoes-despesas.html'"><i data-lucide="check-circle"></i><span>Aprovações</span></button>
+            <button class="nav-btn nav-active" id="menuPagamentos" style="display:none"><i data-lucide="wallet"></i><span>Pagamentos</span></button>
+        </aside>
+
+        <section class="content pagamentos-content">
+            <h2>Pagamentos</h2>
+            <div class="cards">
+                <div class="card"><div class="card-icon"><i data-lucide="clock"></i></div><h3>Por pagar</h3><p id="totalPorPagar">0</p></div>
+                <div class="card"><div class="card-icon"><i data-lucide="banknote"></i></div><h3>Valor por pagar</h3><p id="valorPorPagar">0,00 €</p></div>
+                <div class="card"><div class="card-icon"><i data-lucide="circle-check"></i></div><h3>Pagas este mês</h3><p id="pagasEsteMes">0</p></div>
+                <div class="card"><div class="card-icon"><i data-lucide="wallet-cards"></i></div><h3>Valor pago este mês</h3><p id="valorPagoEsteMes">0,00 €</p></div>
+            </div>
+
+            <div class="pagamentos-filtros">
+                <div class="grupo-filtros">
+                    <button class="filtro-pagamento ativo" onclick="alterarFiltroPagamentos('por-pagar', this)">Por pagar</button>
+                    <button class="filtro-pagamento" onclick="alterarFiltroPagamentos('pagas', this)">Pagas</button>
+                    <button class="filtro-pagamento" onclick="alterarFiltroPagamentos('todas', this)">Todas</button>
+                </div>
+                <input id="pesquisaPagamentos" type="search" placeholder="Pesquisar colaborador ou tipo..." oninput="renderizarPagamentos()">
+            </div>
+
+            <table>
+                <thead><tr><th>Data</th><th>Colaborador</th><th>Tipo</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="tabelaPagamentos"></tbody>
+            </table>
+        </section>
+    </div>
+</div>
+
+<div id="modalPagamento" class="modal-pagamento" onclick="if(event.target === this) fecharModalPagamento()">
+    <div class="modal-pagamento-conteudo">
+        <div class="modal-pagamento-cabecalho">
+            <h3>Detalhe da Despesa</h3>
+            <button onclick="fecharModalPagamento()" aria-label="Fechar">✕</button>
+        </div>
+        <div id="detalhePagamento"></div>
+        <div id="blocoPagamento" class="bloco-pagamento"></div>
+    </div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/graph.js"></script>
+<script src="../js/pagamentos.js"></script>
+<script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>
