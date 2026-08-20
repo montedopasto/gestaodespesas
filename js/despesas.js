@@ -65,9 +65,43 @@ function calcularKM(){
    GUARDAR DESPESA KM
 ============================= */
 
+async function configurarCampoCriarEmNomeDe(){
+
+    const campo = document.getElementById("campoCriarEmNomeDe");
+    if(!campo) return;
+
+    try{
+        const perfil = await obterPerfilUtilizador();
+        campo.style.display =
+            perfil === "Admin" || perfil === "GestorFaturas"
+                ? "block"
+                : "none";
+    }catch(erro){
+        console.error("Não foi possível validar o campo 'em nome de':", erro);
+        campo.style.display = "none";
+    }
+}
+
+async function obterNomeColaboradorDaNota(utilizador){
+
+    const perfil = await obterPerfilUtilizador();
+    const podeCriarEmNomeDe =
+        perfil === "Admin" || perfil === "GestorFaturas";
+
+    if(!podeCriarEmNomeDe){
+        return utilizador.displayName;
+    }
+
+    const nomeIndicado =
+        document.getElementById("nomeColaborador")?.value.trim() || "";
+
+    return nomeIndicado || utilizador.displayName;
+}
+
 async function guardarDespesaKM(){
 
     const utilizador = await testarGraph();
+    const nomeColaborador = await obterNomeColaboradorDaNota(utilizador);
     const token = await getAccessToken();
     const site = await obterSiteApp();
 
@@ -134,7 +168,7 @@ if(!aprovador1){
         fields: {
     Title: "Nota KM - " + new Date().toLocaleDateString("pt-PT"),
     TipoDocumento: "KMS",
-    CriadoPorNome: utilizador.displayName,
+    CriadoPorNome: nomeColaborador,
     CriadoPorEmail: utilizador.mail || utilizador.userPrincipalName,
 
     MatriculaVeiculo: matriculaVeiculo,
@@ -1258,6 +1292,7 @@ async function carregarAprovadoresOutrasDespesas(){
 async function guardarOutrasDespesas(){
 
     const utilizador = await testarGraph();
+    const nomeColaborador = await obterNomeColaboradorDaNota(utilizador);
 
     const token = await getAccessToken();
 
@@ -1357,7 +1392,7 @@ linhas.push({
             TipoDocumento: "DESPESA",
 
             CriadoPorNome:
-                utilizador.displayName,
+                nomeColaborador,
 
             CriadoPorEmail:
                 utilizador.mail ||

@@ -47,6 +47,18 @@ Nova Nota de Despesa
 
 <h2>Nova Nota de Despesa</h2>
 
+<div id="campoCriarEmNomeDe" class="campo-em-nome-de" style="display:none;">
+    <label for="nomeColaborador">Criar nota de despesa em nome de</label>
+    <input
+        id="nomeColaborador"
+        type="text"
+        maxlength="150"
+        autocomplete="off"
+        placeholder="Nome do colaborador (opcional)"
+    >
+    <small>Se deixar em branco, a nota será criada em seu nome.</small>
+</div>
+
 <label>Tipo de despesa</label>
 <select id="tipo" onchange="mudarTipo()">
 <option value="">Selecionar</option>
@@ -227,6 +239,7 @@ carregarAprovadoresOutrasDespesas();
 }
 window.addEventListener("load", () => {
     carregarAprovadores();
+    configurarCampoCriarEmNomeDe();
 });
 </script>
 

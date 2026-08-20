@@ -699,6 +699,37 @@ margin-bottom:5px;
     background:#fde2e5;
 }
 
+.campo-em-nome-de{
+max-width:520px;
+margin:0 0 24px;
+padding:18px;
+background:#eff6ff;
+border:1px solid #bfdbfe;
+border-radius:12px;
+}
+
+.campo-em-nome-de label{
+display:block;
+font-weight:700;
+color:#1e3a8a;
+margin-bottom:8px;
+}
+
+.campo-em-nome-de input{
+width:100%;
+box-sizing:border-box;
+padding:10px 12px;
+border:1px solid #93c5fd;
+border-radius:8px;
+font-size:14px;
+}
+
+.campo-em-nome-de small{
+display:block;
+margin-top:7px;
+color:#475569;
+}
+
 /* ================= PAGAMENTOS ================= */
 
 .pagamentos-content .card p{font-size:24px;}
