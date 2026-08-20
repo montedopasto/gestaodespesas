@@ -150,6 +150,26 @@ async function obterPerfilUtilizador(){
     return "Utilizador";
 
 }
+
+/* Mostra o módulo financeiro apenas aos perfis autorizados. */
+async function configurarMenuPagamentos(){
+
+    const menu = document.getElementById("menuPagamentos");
+    if(!menu) return;
+
+    try{
+        const perfil = await obterPerfilUtilizador();
+        menu.style.display =
+            perfil === "Admin" || perfil === "GestorFaturas"
+                ? "flex"
+                : "none";
+    }catch(erro){
+        console.error("Não foi possível validar o acesso a Pagamentos:", erro);
+        menu.style.display = "none";
+    }
+}
+
+window.addEventListener("load", configurarMenuPagamentos);
 async function uploadPdfSharePoint(ficheiro){
 
     const token = await getAccessToken();
