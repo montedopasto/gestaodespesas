@@ -777,6 +777,7 @@ font-weight:700;
 
 .estado-pagamento.por-pagar{background:#fff8e1; color:#9a6700;}
 .estado-pagamento.pago{background:#e8f5e9; color:#2e7d32;}
+.estado-pagamento.correcao{background:#fff7ed; color:#b45309;}
 .pagamentos-vazio{text-align:center; color:#64748b; padding:28px;}
 
 .modal-pagamento{
@@ -834,6 +835,26 @@ cursor:pointer;
 }
 
 .btn-confirmar-pagamento:disabled{opacity:.65; cursor:wait;}
+.acoes-pagamento{display:flex; gap:10px; flex-wrap:wrap;}
+.btn-devolver-correcao,
+.btn-confirmar-devolucao{
+margin-top:14px;
+background:#b45309;
+color:white;
+border:0;
+padding:11px 18px;
+border-radius:9px;
+font-weight:700;
+cursor:pointer;
+}
+.btn-confirmar-devolucao:disabled{opacity:.65; cursor:wait;}
+.area-devolucao-correcao{margin-top:16px; padding:16px; background:#fff7ed; border:1px solid #fdba74; border-radius:12px;}
+.pagamento-em-correcao{background:#fff7ed; border:1px solid #fdba74; border-radius:12px; padding:16px;}
+.pagamento-em-correcao strong{color:#9a3412; font-size:17px;}
+.aviso-correcao-valores{margin:12px 0 18px; padding:14px; background:#fff7ed; border:1px solid #fdba74; border-radius:10px; color:#9a3412;}
+.campo-valor-correcao{width:110px; padding:8px; border:2px solid #f59e0b; border-radius:8px; font:inherit;}
+.btn-guardar-correcao{margin-top:16px; background:#b45309; color:white; border:0; padding:11px 18px; border-radius:9px; font-weight:700; cursor:pointer;}
+.btn-guardar-correcao:disabled{opacity:.65; cursor:wait;}
 .pagamento-confirmado{background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:16px;}
 .pagamento-confirmado strong{color:#166534; font-size:18px;}
 

@@ -2,6 +2,14 @@
    TABELA KM
 ============================= */
 
+let notaCorrecaoAtual = null;
+
+function notaTemCorrecao(campos){
+    return campos.EmCorrecao === true ||
+        campos.EmCorrecao === 1 ||
+        String(campos.EmCorrecao).toLowerCase() === "true";
+}
+
 function addLinhaKM(){
 
     const tbody = document.getElementById("linhasKM");
@@ -640,6 +648,7 @@ items.sort((a,b) => {
 items.forEach(item => {
 
     const f = item.fields;
+    const emCorrecao = notaTemCorrecao(f);
 
     const linha = document.createElement("tr");
 
@@ -666,6 +675,13 @@ items.forEach(item => {
         font-size:13px;
 
         ${
+            emCorrecao
+            ?
+            `
+            background:#fff7ed;
+            color:#b45309;
+            `
+            :
             f.Estado === "Aprovado"
             ?
             `
@@ -687,7 +703,7 @@ items.forEach(item => {
         }
     ">
 
-        ${f.Estado}
+        ${emCorrecao ? "Correção solicitada" : f.Estado}
 
     </span>
 
@@ -712,6 +728,7 @@ if (window.lucide) {
 }
 window.fecharModalKM = function(){
     document.getElementById("modalKM").style.display = "none";
+    notaCorrecaoAtual = null;
 }
 
 window.verDetalheKM = async function(id){
@@ -729,6 +746,16 @@ document.getElementById("modalKM").dataset.id = id;
 
     const data = await resp.json();
     const f = data.fields;
+    const utilizador = await testarGraph();
+    const emailAtual = (utilizador.mail || utilizador.userPrincipalName || "").toLowerCase();
+    const emailSubmissor = String(f.CriadoPorEmail || "").toLowerCase();
+    const emCorrecao = notaTemCorrecao(f);
+    const podeCorrigir = emCorrecao && emailAtual === emailSubmissor;
+    const linhas = JSON.parse(f.LinhasJSON || "[]");
+
+    notaCorrecaoAtual = podeCorrigir
+        ? { id:String(id), campos:f, linhas }
+        : null;
 const zonaEstado = document.getElementById("zonaEstadoPedido");
 const carimbo = document.getElementById("carimboEstado");
 const caixaJustificacao = document.getElementById("justificacaoRejeicao");
@@ -740,7 +767,13 @@ if(zonaEstado && carimbo && caixaJustificacao && textoJustificacao){
     caixaJustificacao.style.display = "none";
     textoJustificacao.innerText = "";
 
-    if(f.Estado === "Aprovado"){
+    if(emCorrecao){
+        carimbo.innerText = "↩ CORREÇÃO SOLICITADA";
+        carimbo.style.background = "#b45309";
+        carimbo.style.transform = "rotate(-3deg)";
+        carimbo.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+    }
+    else if(f.Estado === "Aprovado"){
 
     const dataHora = new Date(f.Modified).toLocaleString("pt-PT");
 
@@ -784,11 +817,17 @@ carimbo.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 }
 
 console.log("LINHAS RAW:", f.LinhasJSON);
-const linhas = JSON.parse(f.LinhasJSON || "[]");
+const avisoCorrecao = emCorrecao ? `
+    <div class="aviso-correcao-valores">
+        <b>Esta nota foi devolvida para corrigir os valores.</b><br>
+        ${escaparHtmlEmail(f.MotivoCorrecao || "")}
+        ${podeCorrigir ? "<br><small>Apenas os campos destacados podem ser alterados.</small>" : ""}
+    </div>` : "";
 if(f.TipoDocumento === "DESPESA"){
 
     let html = `
 
+    ${avisoCorrecao}
     <p><b>Número:</b> ${f.NumeroNota || "-"}</p>
     <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
 
@@ -805,7 +844,7 @@ if(f.TipoDocumento === "DESPESA"){
         </tr>
     `;
 
-    linhas.forEach(l => {
+    linhas.forEach((l, indice) => {
 
         html += `
 
@@ -817,7 +856,9 @@ if(f.TipoDocumento === "DESPESA"){
 
             <td>${l.descricao}</td>
 
-            <td>${Number(l.valor).toFixed(2)} €</td>
+            <td>${podeCorrigir
+                ? `<input class="campo-valor-correcao valor-linha-correcao" type="number" min="0.01" step="0.01" data-indice="${indice}" value="${Number(l.valor).toFixed(2)}">`
+                : `${Number(l.valor).toFixed(2)} €`}</td>
 
             <td>
 
@@ -844,7 +885,7 @@ if(f.TipoDocumento === "DESPESA"){
         `;
     });
 
-    html += `</table>`;
+    html += `</table>${podeCorrigir ? `<button id="btnGuardarCorrecao" class="btn-guardar-correcao" onclick="guardarCorrecaoValores()">Guardar valores corrigidos</button>` : ""}`;
 
     document.getElementById("conteudoKM").innerHTML = html;
 
@@ -853,10 +894,13 @@ if(f.TipoDocumento === "DESPESA"){
     return;
 }
     let html = `
+    ${avisoCorrecao}
     <p><b>Número:</b> ${f.NumeroNota || "-"}</p>
     <p><b>Matrícula:</b> ${f.MatriculaVeiculo || "-"}</p>
     <p><b>Total KMs:</b> ${f.TotalKMs}</p>
-    <p><b>Valor/KM:</b> ${f.ValorPorKM} €</p>
+    <p><b>Valor/KM:</b> ${podeCorrigir
+        ? `<input id="valorKmCorrecao" class="campo-valor-correcao" type="number" min="0.01" step="0.01" value="${Number(f.ValorPorKM).toFixed(2)}">`
+        : `${f.ValorPorKM} €`}</p>
     <p><b>Total:</b> ${Number(f.TotalRecebido).toFixed(2)} €</p>
 
     <br>
@@ -871,23 +915,129 @@ if(f.TipoDocumento === "DESPESA"){
         </tr>
 `;
 
-    linhas.forEach(l => {
+    linhas.forEach((l, indice) => {
         html += `
             <tr>
                 <td>${l.data}</td>
                 <td>${l.origem}</td>
                 <td>${l.destino}</td>
                 <td>${l.justificacao}</td>
-                <td>${l.kms}</td>
+                <td>${podeCorrigir
+                    ? `<input class="campo-valor-correcao kms-linha-correcao" type="number" min="0.01" step="0.01" data-indice="${indice}" value="${Number(l.kms)}">`
+                    : l.kms}</td>
             </tr>
         `;
     });
 
-    html += `</table>`;
+    html += `</table>${podeCorrigir ? `<button id="btnGuardarCorrecao" class="btn-guardar-correcao" onclick="guardarCorrecaoValores()">Guardar valores corrigidos</button>` : ""}`;
 
     document.getElementById("conteudoKM").innerHTML = html;
     document.getElementById("modalKM").style.display = "block";
 }
+
+window.guardarCorrecaoValores = async function(){
+    if(!notaCorrecaoAtual) return;
+    if(!confirm("Guardar os valores corrigidos e devolver a nota para Pagamentos?")) return;
+
+    const botao = document.getElementById("btnGuardarCorrecao");
+    botao.disabled = true;
+    botao.textContent = "A guardar...";
+
+    try{
+        const utilizador = await testarGraph();
+        const emailAtual = (utilizador.mail || utilizador.userPrincipalName || "").toLowerCase();
+        const token = await getAccessToken();
+        const site = await obterSiteApp();
+        const url = `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/NotasDespesa/items/${notaCorrecaoAtual.id}`;
+        const atualResp = await fetch(`${url}?expand=fields`, {
+            headers:{ Authorization:"Bearer " + token }
+        });
+        if(!atualResp.ok) throw new Error(await atualResp.text());
+        const atual = await atualResp.json();
+        const camposAtuais = atual.fields;
+
+        if(camposAtuais.Estado !== "Aprovado" || !notaTemCorrecao(camposAtuais)){
+            throw new Error("Esta nota já não está disponível para correção.");
+        }
+        if(String(camposAtuais.CriadoPorEmail || "").toLowerCase() !== emailAtual){
+            throw new Error("Apenas quem submeteu a nota pode corrigir os valores.");
+        }
+
+        const linhas = JSON.parse(camposAtuais.LinhasJSON || "[]");
+        const alteracoes = {
+            EmCorrecao:false
+        };
+
+        if(camposAtuais.TipoDocumento === "DESPESA"){
+            document.querySelectorAll(".valor-linha-correcao").forEach(input => {
+                const indice = Number(input.dataset.indice);
+                const valor = Number(input.value);
+                if(!Number.isInteger(indice) || !linhas[indice] || !Number.isFinite(valor) || valor <= 0){
+                    throw new Error("Todos os valores devem ser superiores a zero.");
+                }
+                linhas[indice].valor = valor;
+            });
+            alteracoes.TotalRecebido = linhas.reduce((soma, linha) => soma + Number(linha.valor || 0), 0);
+        }else{
+            document.querySelectorAll(".kms-linha-correcao").forEach(input => {
+                const indice = Number(input.dataset.indice);
+                const kms = Number(input.value);
+                if(!Number.isInteger(indice) || !linhas[indice] || !Number.isFinite(kms) || kms <= 0){
+                    throw new Error("Todos os KMs devem ser superiores a zero.");
+                }
+                linhas[indice].kms = kms;
+            });
+            const valorKM = Number(document.getElementById("valorKmCorrecao")?.value);
+            if(!Number.isFinite(valorKM) || valorKM <= 0){
+                throw new Error("O valor por KM deve ser superior a zero.");
+            }
+            const totalKMs = linhas.reduce((soma, linha) => soma + Number(linha.kms || 0), 0);
+            alteracoes.TotalKMs = totalKMs;
+            alteracoes.ValorPorKM = valorKM;
+            alteracoes.TotalRecebido = totalKMs * valorKM;
+        }
+
+        alteracoes.LinhasJSON = JSON.stringify(linhas);
+        const resp = await fetch(`${url}/fields`, {
+            method:"PATCH",
+            headers:{
+                Authorization:"Bearer " + token,
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(alteracoes)
+        });
+        if(!resp.ok) throw new Error(await resp.text());
+
+        let avisoEmail = "";
+        if(camposAtuais.DevolvidoPorEmail){
+            try{
+                const html = construirEmailBase("Valores corrigidos", `
+                    <p>Os valores da nota <b>${escaparHtmlEmail(camposAtuais.NumeroNota || "-")}</b> foram corrigidos.</p>
+                    <p><b>Novo total:</b> ${formatarEuroEmail(alteracoes.TotalRecebido)}</p>
+                    <p>A nota regressou diretamente à área de Pagamentos.</p>
+                `);
+                await enviarEmailGraph(
+                    [camposAtuais.DevolvidoPorEmail],
+                    `Nota ${camposAtuais.NumeroNota || ""} corrigida`.trim(),
+                    html
+                );
+            }catch(erro){
+                console.error("Valores corrigidos, mas o email falhou:", erro);
+                avisoEmail = "\n\nOs valores foram guardados, mas o email ao responsável pelo pagamento não foi enviado.";
+            }
+        }
+
+        notaCorrecaoAtual = null;
+        fecharModalKM();
+        await carregarDashboardDespesas();
+        alert("Valores corrigidos. A nota voltou para Pagamentos." + avisoEmail);
+    }catch(erro){
+        console.error("Erro ao guardar correção:", erro);
+        alert(erro.message || "Não foi possível guardar a correção.");
+        botao.disabled = false;
+        botao.textContent = "Guardar valores corrigidos";
+    }
+};
 window.verPreviewKM = function(){
 
     const rows = document.querySelectorAll("#linhasKM tr:not(:first-child)");
