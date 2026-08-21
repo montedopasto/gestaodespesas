@@ -281,6 +281,37 @@ async function notificarAutorCorrecao(campos, motivo, responsavel){
     );
 }
 
+async function notificarAutorPagamento(campos, pagamento){
+    const link = "https://montedopasto.github.io/gestaodespesas/pages/dashboard.html";
+    const notasHTML = pagamento.notas
+        ? `<p style="background:#f0fdf4;border-left:4px solid #166534;padding:12px"><b>Notas do pagamento:</b><br>${escaparHTML(pagamento.notas)}</p>`
+        : "";
+    const html = `
+        <div style="font-family:Arial,sans-serif;color:#1e293b;line-height:1.55;max-width:640px">
+            <div style="background:#166534;color:white;padding:18px 22px;border-radius:10px 10px 0 0">
+                <h2 style="margin:0;font-size:20px">Nota de despesa paga</h2>
+            </div>
+            <div style="border:1px solid #dbe4dc;border-top:0;padding:22px;border-radius:0 0 10px 10px">
+                <p>O pagamento da sua nota de despesa foi confirmado.</p>
+                <table style="border-collapse:collapse;width:100%">
+                    <tr><td style="padding:6px 0"><b>Número</b></td><td>${escaparHTML(campos.NumeroNota || "-")}</td></tr>
+                    <tr><td style="padding:6px 0"><b>Valor pago</b></td><td>${formatarEuro(campos.TotalRecebido)}</td></tr>
+                    <tr><td style="padding:6px 0"><b>Pago por</b></td><td>${escaparHTML(pagamento.nome)}</td></tr>
+                    <tr><td style="padding:6px 0"><b>Data</b></td><td>${formatarData(pagamento.data, true)}</td></tr>
+                </table>
+                ${notasHTML}
+                <p style="margin-top:22px"><a href="${link}" style="background:#166534;color:white;text-decoration:none;padding:11px 18px;border-radius:7px;display:inline-block">Abrir aplicação</a></p>
+                <p style="margin:24px 0 0;color:#64748b;font-size:12px">Mensagem enviada automaticamente pela aplicação Gestão de Despesas.</p>
+            </div>
+        </div>`;
+
+    await enviarEmailGraph(
+        [campos.CriadoPorEmail],
+        `Pagamento confirmado da nota ${campos.NumeroNota || ""}`.trim(),
+        html
+    );
+}
+
 async function devolverParaCorrecao(){
     if(!pagamentoSelecionadoId) return;
 
@@ -320,6 +351,9 @@ async function devolverParaCorrecao(){
 
         const nome = utilizador.displayName || "-";
         const email = utilizador.mail || utilizador.userPrincipalName;
+        const nomePagador = utilizador.displayName || "-";
+        const emailPagador = utilizador.mail || utilizador.userPrincipalName;
+        const dataPagamento = new Date().toISOString();
         const resp = await fetch(`${url}/fields`, {
             method:"PATCH",
             headers:{
@@ -397,18 +431,30 @@ async function confirmarPagamento(){
             body:JSON.stringify({
                 EstadoPagamento:"Pago",
                 Pago:true,
-                PagoPorNome:utilizador.displayName,
-                PagoPorEmail:utilizador.mail || utilizador.userPrincipalName,
-                DataPagamento:new Date().toISOString(),
+                PagoPorNome:nomePagador,
+                PagoPorEmail:emailPagador,
+                DataPagamento:dataPagamento,
                 NotasPagamento:notas
             })
         });
 
         if(!resp.ok) throw new Error(await resp.text());
 
+        let avisoEmail = "";
+        try{
+            await notificarAutorPagamento(atual.fields, {
+                nome:nomePagador,
+                data:dataPagamento,
+                notas
+            });
+        }catch(erro){
+            console.error("Pagamento confirmado, mas o email falhou:", erro);
+            avisoEmail = "\n\nO pagamento foi confirmado, mas o email ao colaborador não foi enviado.";
+        }
+
         fecharModalPagamento();
         await carregarPagamentos();
-        alert("Pagamento confirmado com sucesso.");
+        alert("Pagamento confirmado com sucesso." + avisoEmail);
     }catch(erro){
         console.error("Erro ao confirmar pagamento:", erro);
         alert(erro.message || "Não foi possível confirmar o pagamento.");

@@ -21,6 +21,9 @@ Depois da configuração, os utilizadores devem terminar sessão na aplicação 
 - Ao submeter uma nota: email para `Aprovador1Email` e, quando definido, `Aprovador2Email`.
 - Ao aprovar ou recusar: email para `CriadoPorEmail`.
 - Nas recusas, o email inclui a justificação.
+- Ao confirmar o pagamento: email para `CriadoPorEmail`, com o valor, data, responsável e notas de pagamento.
+- Ao devolver para correção: email para `CriadoPorEmail`, com o motivo.
+- Ao concluir a correção: email para `DevolvidoPorEmail`, informando que a nota voltou a Pagamentos.
 
 Os emails são enviados pela caixa partilhada `gestaodespesas@montedopasto.pt`, apresentada como **App Gestão de Despesas**.
 
