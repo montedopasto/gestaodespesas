@@ -13,6 +13,69 @@ async function getAccessToken() {
 
 }
 
+async function getEmailAccessToken(){
+
+    const account = msalInstance.getAllAccounts()[0];
+    if(!account){
+        throw new Error("Sessão Microsoft não encontrada.");
+    }
+
+    try{
+        const response = await msalInstance.acquireTokenSilent({
+            scopes:["Mail.Send"],
+            account:account
+        });
+
+        return response.accessToken;
+    }catch(erro){
+        console.error("Permissão Mail.Send indisponível:", erro);
+        throw new Error(
+            "A conta não tem autorização para enviar emails. Termine a sessão e volte a entrar depois de configurar a permissão Mail.Send."
+        );
+    }
+}
+
+async function enviarEmailGraph(destinatarios, assunto, conteudoHTML){
+
+    const emails = [...new Set(
+        (destinatarios || [])
+            .map(email => String(email || "").trim().toLowerCase())
+            .filter(email => email.includes("@"))
+    )];
+
+    if(!emails.length){
+        throw new Error("O email do destinatário não está definido.");
+    }
+
+    const token = await getEmailAccessToken();
+    const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+        method:"POST",
+        headers:{
+            Authorization:"Bearer " + token,
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            message:{
+                subject:assunto,
+                body:{
+                    contentType:"HTML",
+                    content:conteudoHTML
+                },
+                toRecipients:emails.map(email => ({
+                    emailAddress:{ address:email }
+                }))
+            },
+            saveToSentItems:true
+        })
+    });
+
+    if(!resp.ok){
+        const detalhe = await resp.text();
+        console.error("Erro Graph sendMail:", detalhe);
+        throw new Error("O Microsoft 365 recusou o envio do email.");
+    }
+}
+
 
 async function testarGraph(){
 

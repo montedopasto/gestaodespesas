@@ -139,6 +139,89 @@ async function gerarNumeroNota(token, siteId){
     return prefixo + String(ultimoNumero + 1).padStart(6, "0");
 }
 
+function escaparHtmlEmail(valor){
+    return String(valor ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function formatarEuroEmail(valor){
+    return Number(valor || 0).toLocaleString("pt-PT", {
+        style:"currency",
+        currency:"EUR"
+    });
+}
+
+function construirEmailBase(titulo, conteudo){
+    return `
+        <div style="font-family:Arial,sans-serif;color:#1e293b;line-height:1.55;max-width:640px">
+            <div style="background:#166534;color:white;padding:18px 22px;border-radius:10px 10px 0 0">
+                <h2 style="margin:0;font-size:20px">${escaparHtmlEmail(titulo)}</h2>
+            </div>
+            <div style="border:1px solid #dbe4dc;border-top:0;padding:22px;border-radius:0 0 10px 10px">
+                ${conteudo}
+                <p style="margin:24px 0 0;color:#64748b;font-size:12px">Mensagem enviada automaticamente pela aplicação Gestão de Despesas.</p>
+            </div>
+        </div>`;
+}
+
+async function notificarAprovadoresNota(campos){
+    const destinatarios = [
+        campos.Aprovador1Email,
+        campos.Aprovador2Email
+    ].filter(Boolean);
+
+    const tipo = campos.TipoDocumento === "KMS"
+        ? "Deslocação em KMs"
+        : "Outras despesas";
+    const link = "https://montedopasto.github.io/gestaodespesas/pages/aprovacoes-despesas.html";
+    const html = construirEmailBase("Nova nota para aprovação", `
+        <p>Foi submetida uma nova nota de despesa que aguarda a sua decisão.</p>
+        <table style="border-collapse:collapse;width:100%">
+            <tr><td style="padding:6px 0"><b>Número</b></td><td>${escaparHtmlEmail(campos.NumeroNota)}</td></tr>
+            <tr><td style="padding:6px 0"><b>Colaborador</b></td><td>${escaparHtmlEmail(campos.CriadoPorNome)}</td></tr>
+            <tr><td style="padding:6px 0"><b>Tipo</b></td><td>${escaparHtmlEmail(tipo)}</td></tr>
+            <tr><td style="padding:6px 0"><b>Valor</b></td><td>${formatarEuroEmail(campos.TotalRecebido)}</td></tr>
+        </table>
+        <p style="margin-top:22px"><a href="${link}" style="background:#166534;color:white;text-decoration:none;padding:11px 18px;border-radius:7px;display:inline-block">Abrir pedido</a></p>
+    `);
+
+    await enviarEmailGraph(
+        destinatarios,
+        `Nota de despesa ${campos.NumeroNota} para aprovação`,
+        html
+    );
+}
+
+async function notificarAutorDecisao(campos, estado, justificacao, decisor){
+    const aprovado = estado === "Aprovado";
+    const titulo = aprovado
+        ? "Nota de despesa aprovada"
+        : "Nota de despesa recusada";
+    const cor = aprovado ? "#166534" : "#b91c1c";
+    const justificacaoHTML = !aprovado
+        ? `<p style="background:#fef2f2;border-left:4px solid #b91c1c;padding:12px"><b>Justificação:</b><br>${escaparHtmlEmail(justificacao)}</p>`
+        : "";
+    const html = construirEmailBase(titulo, `
+        <p>A sua nota de despesa foi <b style="color:${cor}">${aprovado ? "aprovada" : "recusada"}</b>.</p>
+        <table style="border-collapse:collapse;width:100%">
+            <tr><td style="padding:6px 0"><b>Número</b></td><td>${escaparHtmlEmail(campos.NumeroNota || "-")}</td></tr>
+            <tr><td style="padding:6px 0"><b>Valor</b></td><td>${formatarEuroEmail(campos.TotalRecebido)}</td></tr>
+            <tr><td style="padding:6px 0"><b>Decisão por</b></td><td>${escaparHtmlEmail(decisor)}</td></tr>
+        </table>
+        ${justificacaoHTML}
+    `);
+
+    await enviarEmailGraph(
+        [campos.CriadoPorEmail],
+        `Nota de despesa ${campos.NumeroNota || ""} ${aprovado ? "aprovada" : "recusada"}`.trim(),
+        html
+    );
+}
+
 async function guardarDespesaKM(){
 
     const utilizador = await testarGraph();
@@ -248,7 +331,15 @@ if(!resp.ok){
     return;
 }
 
-    alert("✅ Nota de despesa guardada com sucesso!");
+let avisoEmail = "";
+try{
+    await notificarAprovadoresNota(body.fields);
+}catch(erro){
+    console.error("Nota guardada, mas o email falhou:", erro);
+    avisoEmail = "\n\nA nota foi guardada, mas o email ao aprovador não foi enviado. " + erro.message;
+}
+
+alert("✅ Nota de despesa guardada com sucesso!" + avisoEmail);
 
 window.location.href = "dashboard.html";
 
@@ -417,6 +508,25 @@ async function atualizarEstadoDespesa(id, estado, justificacao = ""){
 
     const utilizador = await testarGraph();
 
+    const itemResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${listaNome}/items/${id}?expand=fields`,
+        { headers:{ Authorization:"Bearer " + token } }
+    );
+
+    if(!itemResp.ok){
+        alert("Não foi possível confirmar o estado atual da nota.");
+        return;
+    }
+
+    const itemAtual = await itemResp.json();
+    const camposAtuais = itemAtual.fields || {};
+
+    if(camposAtuais.Estado !== "Pendente"){
+        alert("Esta nota já foi decidida por outro utilizador.");
+        carregarAprovacoesDespesas();
+        return;
+    }
+
 const body = {
     Estado: estado,
     AprovadoPorNome: utilizador.displayName,
@@ -444,7 +554,20 @@ const body = {
         return;
     }
 
-    alert("Estado atualizado: " + estado);
+    let avisoEmail = "";
+    try{
+        await notificarAutorDecisao(
+            camposAtuais,
+            estado,
+            justificacao,
+            utilizador.displayName
+        );
+    }catch(erro){
+        console.error("Estado atualizado, mas o email falhou:", erro);
+        avisoEmail = "\n\nA decisão foi guardada, mas o email ao autor não foi enviado. " + erro.message;
+    }
+
+    alert("Estado atualizado: " + estado + avisoEmail);
 
     carregarAprovacoesDespesas();
 }
@@ -1491,7 +1614,15 @@ linhas.push({
         return;
     }
 
-    alert("✅ Despesa guardada com sucesso!");
+    let avisoEmail = "";
+    try{
+        await notificarAprovadoresNota(body.fields);
+    }catch(erro){
+        console.error("Despesa guardada, mas o email falhou:", erro);
+        avisoEmail = "\n\nA despesa foi guardada, mas o email ao aprovador não foi enviado. " + erro.message;
+    }
+
+    alert("✅ Despesa guardada com sucesso!" + avisoEmail);
 
     window.location.href = "dashboard.html";
 
