@@ -22,7 +22,7 @@ async function getEmailAccessToken(){
 
     try{
         const response = await msalInstance.acquireTokenSilent({
-            scopes:["Mail.Send"],
+            scopes:["Mail.Send", "Mail.Send.Shared"],
             account:account
         });
 
@@ -37,6 +37,8 @@ async function getEmailAccessToken(){
 
 async function enviarEmailGraph(destinatarios, assunto, conteudoHTML){
 
+    const remetente = "gestaodespesas@montedopasto.pt";
+
     const emails = [...new Set(
         (destinatarios || [])
             .map(email => String(email || "").trim().toLowerCase())
@@ -48,26 +50,35 @@ async function enviarEmailGraph(destinatarios, assunto, conteudoHTML){
     }
 
     const token = await getEmailAccessToken();
-    const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
-        method:"POST",
-        headers:{
-            Authorization:"Bearer " + token,
-            "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-            message:{
-                subject:assunto,
-                body:{
-                    contentType:"HTML",
-                    content:conteudoHTML
-                },
-                toRecipients:emails.map(email => ({
-                    emailAddress:{ address:email }
-                }))
+    const resp = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(remetente)}/sendMail`,
+        {
+            method:"POST",
+            headers:{
+                Authorization:"Bearer " + token,
+                "Content-Type":"application/json"
             },
-            saveToSentItems:true
-        })
-    });
+            body:JSON.stringify({
+                message:{
+                    subject:assunto,
+                    from:{
+                        emailAddress:{
+                            name:"App Gestão de Despesas",
+                            address:remetente
+                        }
+                    },
+                    body:{
+                        contentType:"HTML",
+                        content:conteudoHTML
+                    },
+                    toRecipients:emails.map(email => ({
+                        emailAddress:{ address:email }
+                    }))
+                },
+                saveToSentItems:true
+            })
+        }
+    );
 
     if(!resp.ok){
         const detalhe = await resp.text();

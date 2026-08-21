@@ -11,13 +11,13 @@ const msalInstance = new msal.PublicClientApplication(msalConfig);
 async function login() {
 
     const loginRequest = {
-        scopes: ["User.Read", "Mail.Send"]
+        scopes: ["User.Read", "Mail.Send", "Mail.Send.Shared"]
     };
 
     try {
 
         const response = await msalInstance.loginPopup({
-    scopes: ["User.Read", "Mail.Send"],
+    scopes: ["User.Read", "Mail.Send", "Mail.Send.Shared"],
     prompt: "select_account" // 🔥 força seleção limpa
 });
 
