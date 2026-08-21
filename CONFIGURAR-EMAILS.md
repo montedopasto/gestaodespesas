@@ -11,7 +11,7 @@ Na aplicação registada com o ID `81a4b1c0-13eb-4c3e-bb82-283fa7d52334`:
 3. Abrir a aplicação da Gestão de Despesas.
 4. Entrar em **Permissões de API > Adicionar uma permissão**.
 5. Escolher **Microsoft Graph > Permissões delegadas**.
-6. Adicionar `Mail.Send`.
+6. Adicionar `Mail.Send` e `Mail.Send.Shared`.
 7. Conceder consentimento de administrador, caso a política da organização o exija.
 
 Depois da configuração, os utilizadores devem terminar sessão na aplicação e entrar novamente para autorizar a nova permissão.
@@ -22,7 +22,9 @@ Depois da configuração, os utilizadores devem terminar sessão na aplicação 
 - Ao aprovar ou recusar: email para `CriadoPorEmail`.
 - Nas recusas, o email inclui a justificação.
 
-Os emails são enviados pela caixa de correio do utilizador que executa a ação e ficam nos respetivos Itens Enviados.
+Os emails são enviados pela caixa partilhada `gestaodespesas@montedopasto.pt`, apresentada como **App Gestão de Despesas**.
+
+Cada utilizador que possa submeter, aprovar ou recusar notas tem de possuir a permissão Exchange **Enviar como** sobre essa caixa partilhada. Esta permissão é independente das permissões Microsoft Graph.
 
 ## Power Automate anterior
 
