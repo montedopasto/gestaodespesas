@@ -51,7 +51,7 @@ async function enviarEmailGraph(destinatarios, assunto, conteudoHTML){
 
     const token = await getEmailAccessToken();
     const resp = await fetch(
-        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(remetente)}/sendMail`,
+        "https://graph.microsoft.com/v1.0/me/sendMail",
         {
             method:"POST",
             headers:{

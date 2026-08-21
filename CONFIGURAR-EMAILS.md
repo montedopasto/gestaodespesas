@@ -26,6 +26,8 @@ Os emails são enviados pela caixa partilhada `gestaodespesas@montedopasto.pt`, 
 
 Cada utilizador que possa submeter, aprovar ou recusar notas tem de possuir a permissão Exchange **Enviar como** sobre essa caixa partilhada. Esta permissão é independente das permissões Microsoft Graph.
 
+A aplicação envia através da sessão do utilizador (`/me/sendMail`) e define a caixa partilhada como remetente. Desta forma, a permissão **Acesso Total** à caixa não é necessária.
+
 ## Power Automate anterior
 
 Depois de validar este sistema, desativar o fluxo antigo que envia estes mesmos emails para evitar mensagens duplicadas.
