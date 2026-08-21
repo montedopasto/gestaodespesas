@@ -18,6 +18,12 @@ function despesaEstaPaga(campos){
         campos.EstadoPagamento === "Pago";
 }
 
+function despesaEmCorrecao(campos){
+    return campos.EmCorrecao === true ||
+        campos.EmCorrecao === 1 ||
+        String(campos.EmCorrecao).toLowerCase() === "true";
+}
+
 function formatarEuro(valor){
     return Number(valor || 0).toLocaleString("pt-PT", {
         style: "currency",
@@ -89,7 +95,9 @@ async function carregarPagamentos(){
 
 function atualizarResumoPagamentos(){
     const agora = new Date();
-    const porPagar = pagamentosAprovados.filter(i => !despesaEstaPaga(i.fields));
+    const porPagar = pagamentosAprovados.filter(i =>
+        !despesaEstaPaga(i.fields) && !despesaEmCorrecao(i.fields)
+    );
     const pagasMes = pagamentosAprovados.filter(i => {
         if(!despesaEstaPaga(i.fields) || !i.fields.DataPagamento) return false;
         const data = new Date(i.fields.DataPagamento);
@@ -117,8 +125,11 @@ function renderizarPagamentos(){
     const filtrados = pagamentosAprovados.filter(item => {
         const f = item.fields;
         const paga = despesaEstaPaga(f);
+        const emCorrecao = despesaEmCorrecao(f);
         const correspondeEstado = filtroPagamentoAtual === "todas" ||
-            (filtroPagamentoAtual === "pagas" ? paga : !paga);
+            (filtroPagamentoAtual === "pagas" && paga) ||
+            (filtroPagamentoAtual === "correcao" && emCorrecao) ||
+            (filtroPagamentoAtual === "por-pagar" && !paga && !emCorrecao);
         const texto = `${f.CriadoPorNome || ""} ${f.TipoDocumento || ""} ${f.Title || ""}`.toLowerCase();
         return correspondeEstado && texto.includes(pesquisa);
     });
@@ -132,6 +143,9 @@ function renderizarPagamentos(){
     tabela.innerHTML = filtrados.map(item => {
         const f = item.fields;
         const paga = despesaEstaPaga(f);
+        const emCorrecao = despesaEmCorrecao(f);
+        const classeEstado = paga ? "pago" : (emCorrecao ? "correcao" : "por-pagar");
+        const textoEstado = paga ? "Pago" : (emCorrecao ? "Em correção" : "Por pagar");
         return `
             <tr>
                 <td>${escaparHTML(f.NumeroNota || "-")}</td>
@@ -139,7 +153,7 @@ function renderizarPagamentos(){
                 <td>${escaparHTML(f.CriadoPorNome || "-")}</td>
                 <td>${escaparHTML(f.TipoDocumento === "KMS" ? "KMs" : "Despesa")}</td>
                 <td>${formatarEuro(f.TotalRecebido)}</td>
-                <td><span class="estado-pagamento ${paga ? "pago" : "por-pagar"}">${paga ? "Pago" : "Por pagar"}</span></td>
+                <td><span class="estado-pagamento ${classeEstado}">${textoEstado}</span></td>
                 <td><button class="btn-icon" title="Ver detalhe" onclick="abrirDetalhePagamento('${item.id}')"><i data-lucide="file-text"></i></button></td>
             </tr>`;
     }).join("");
@@ -208,11 +222,137 @@ function renderizarBlocoPagamento(f){
         return;
     }
 
+    if(despesaEmCorrecao(f)){
+        bloco.innerHTML = `
+            <h3>Correção de valores</h3>
+            <div class="pagamento-em-correcao">
+                <strong>↩ DEVOLVIDA AO COLABORADOR</strong>
+                <p><b>Motivo:</b> ${escaparHTML(f.MotivoCorrecao || "-")}</p>
+                <p><b>Devolvida por:</b> ${escaparHTML(f.DevolvidoPorNome || "-")}</p>
+                <p><b>Data:</b> ${formatarData(f.DataDevolucao, true)}</p>
+            </div>`;
+        return;
+    }
+
     bloco.innerHTML = `
         <h3>Pagamento</h3>
         <label for="notasPagamento">Notas <span>(opcional)</span></label>
         <textarea id="notasPagamento" rows="4" maxlength="2000" placeholder="Adicionar notas sobre o pagamento..."></textarea>
-        <button id="btnConfirmarPagamento" class="btn-confirmar-pagamento" onclick="confirmarPagamento()">Confirmar pagamento</button>`;
+        <div class="acoes-pagamento">
+            <button id="btnConfirmarPagamento" class="btn-confirmar-pagamento" onclick="confirmarPagamento()">Confirmar pagamento</button>
+            <button class="btn-devolver-correcao" onclick="mostrarDevolucaoCorrecao()">Devolver para correção</button>
+        </div>
+        <div id="areaDevolucaoCorrecao" class="area-devolucao-correcao" style="display:none">
+            <label for="motivoCorrecao">Indique o que deve ser corrigido</label>
+            <textarea id="motivoCorrecao" rows="3" maxlength="2000" placeholder="Ex.: Corrigir o valor da refeição de 35 € para 25 €."></textarea>
+            <button id="btnConfirmarDevolucao" class="btn-confirmar-devolucao" onclick="devolverParaCorrecao()">Confirmar devolução</button>
+        </div>`;
+}
+
+function mostrarDevolucaoCorrecao(){
+    const area = document.getElementById("areaDevolucaoCorrecao");
+    if(area) area.style.display = area.style.display === "none" ? "block" : "none";
+}
+
+async function notificarAutorCorrecao(campos, motivo, responsavel){
+    const link = "https://montedopasto.github.io/gestaodespesas/pages/dashboard.html";
+    const html = `
+        <div style="font-family:Arial,sans-serif;color:#1e293b;line-height:1.55;max-width:640px">
+            <div style="background:#b45309;color:white;padding:18px 22px;border-radius:10px 10px 0 0">
+                <h2 style="margin:0;font-size:20px">Correção de valores necessária</h2>
+            </div>
+            <div style="border:1px solid #f1d5a8;border-top:0;padding:22px;border-radius:0 0 10px 10px">
+                <p>A sua nota foi devolvida para corrigir apenas os valores.</p>
+                <table style="border-collapse:collapse;width:100%">
+                    <tr><td style="padding:6px 0"><b>Número</b></td><td>${escaparHTML(campos.NumeroNota || "-")}</td></tr>
+                    <tr><td style="padding:6px 0"><b>Valor atual</b></td><td>${formatarEuro(campos.TotalRecebido)}</td></tr>
+                    <tr><td style="padding:6px 0"><b>Devolvida por</b></td><td>${escaparHTML(responsavel)}</td></tr>
+                </table>
+                <p style="background:#fff7ed;border-left:4px solid #b45309;padding:12px"><b>Motivo:</b><br>${escaparHTML(motivo)}</p>
+                <p style="margin-top:22px"><a href="${link}" style="background:#b45309;color:white;text-decoration:none;padding:11px 18px;border-radius:7px;display:inline-block">Corrigir valores</a></p>
+                <p style="margin:24px 0 0;color:#64748b;font-size:12px">Mensagem enviada automaticamente pela aplicação Gestão de Despesas.</p>
+            </div>
+        </div>`;
+
+    await enviarEmailGraph(
+        [campos.CriadoPorEmail],
+        `Correção necessária na nota ${campos.NumeroNota || ""}`.trim(),
+        html
+    );
+}
+
+async function devolverParaCorrecao(){
+    if(!pagamentoSelecionadoId) return;
+
+    const motivo = document.getElementById("motivoCorrecao")?.value.trim() || "";
+    if(!motivo){
+        alert("Indique o motivo da correção.");
+        return;
+    }
+    if(!confirm("Devolver esta nota ao colaborador para corrigir os valores?")) return;
+
+    const botao = document.getElementById("btnConfirmarDevolucao");
+    botao.disabled = true;
+    botao.textContent = "A devolver...";
+
+    try{
+        if(!await validarAcessoPagamentos()) return;
+
+        const utilizador = await testarGraph();
+        const token = await getAccessToken();
+        const site = await obterSiteApp();
+        const url = `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/NotasDespesa/items/${pagamentoSelecionadoId}`;
+        const atualResp = await fetch(`${url}?expand=fields`, {
+            headers:{ Authorization:"Bearer " + token }
+        });
+        if(!atualResp.ok) throw new Error(await atualResp.text());
+        const atual = await atualResp.json();
+
+        if(atual.fields.Estado !== "Aprovado"){
+            throw new Error("A nota deixou de estar aprovada.");
+        }
+        if(despesaEstaPaga(atual.fields)){
+            throw new Error("Uma nota já paga não pode ser devolvida.");
+        }
+        if(despesaEmCorrecao(atual.fields)){
+            throw new Error("A nota já foi devolvida para correção.");
+        }
+
+        const nome = utilizador.displayName || "-";
+        const email = utilizador.mail || utilizador.userPrincipalName;
+        const resp = await fetch(`${url}/fields`, {
+            method:"PATCH",
+            headers:{
+                Authorization:"Bearer " + token,
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                EmCorrecao:true,
+                MotivoCorrecao:motivo,
+                DevolvidoPorNome:nome,
+                DevolvidoPorEmail:email,
+                DataDevolucao:new Date().toISOString()
+            })
+        });
+        if(!resp.ok) throw new Error(await resp.text());
+
+        let avisoEmail = "";
+        try{
+            await notificarAutorCorrecao(atual.fields, motivo, nome);
+        }catch(erro){
+            console.error("Nota devolvida, mas o email falhou:", erro);
+            avisoEmail = "\n\nA nota foi devolvida, mas o email ao colaborador não foi enviado.";
+        }
+
+        fecharModalPagamento();
+        await carregarPagamentos();
+        alert("Nota devolvida para correção." + avisoEmail);
+    }catch(erro){
+        console.error("Erro ao devolver nota para correção:", erro);
+        alert(erro.message || "Não foi possível devolver a nota.");
+        botao.disabled = false;
+        botao.textContent = "Confirmar devolução";
+    }
 }
 
 async function confirmarPagamento(){
@@ -243,6 +383,9 @@ async function confirmarPagamento(){
         }
         if(despesaEstaPaga(atual.fields)){
             throw new Error("Este pagamento já foi confirmado por outro utilizador.");
+        }
+        if(despesaEmCorrecao(atual.fields)){
+            throw new Error("Esta nota está a aguardar a correção dos valores.");
         }
 
         const resp = await fetch(`${url}/fields`, {
