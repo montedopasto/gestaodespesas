@@ -26,9 +26,226 @@ function addLinhaKM(){
     `;
 
     tbody.appendChild(tr);
-if (window.lucide) {
+    if (window.lucide) {
     lucide.createIcons();
 }
+
+    return tr;
+}
+
+function mostrarEstadoImportacaoKM(mensagem, tipo = ""){
+    const estado = document.getElementById("estadoImportacaoKM");
+    if(!estado) return;
+    estado.textContent = mensagem;
+    estado.className = "estado-importacao-km" + (tipo ? " " + tipo : "");
+}
+
+function descarregarModeloKM(){
+    if(typeof XLSX === "undefined"){
+        alert("Não foi possível criar o modelo Excel.");
+        return;
+    }
+
+    const folha = XLSX.utils.aoa_to_sheet([
+        ["Data", "Origem", "Destino", "Justificação", "Quilómetros"]
+    ]);
+    folha["!cols"] = [
+        { wch:14 }, { wch:28 }, { wch:28 }, { wch:42 }, { wch:14 }
+    ];
+    folha["!autofilter"] = { ref:"A1:E1" };
+
+    const livro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(livro, folha, "Deslocações");
+    XLSX.writeFile(livro, "Modelo_Deslocacoes_KM.xlsx");
+}
+
+function abrirImportacaoKM(){
+    const input = document.getElementById("ficheiroImportacaoKM");
+    if(!input) return;
+    input.value = "";
+    input.click();
+}
+
+function normalizarCabecalhoKM(valor){
+    return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+}
+
+function formatarDataImportadaKM(valor){
+    let ano;
+    let mes;
+    let dia;
+
+    if(valor instanceof Date && !Number.isNaN(valor.getTime())){
+        ano = valor.getFullYear();
+        mes = valor.getMonth() + 1;
+        dia = valor.getDate();
+    }else if(typeof valor === "number" && typeof XLSX !== "undefined"){
+        const partes = XLSX.SSF.parse_date_code(valor);
+        if(partes){
+            ano = partes.y;
+            mes = partes.m;
+            dia = partes.d;
+        }
+    }else{
+        const texto = String(valor || "").trim();
+        let partes = texto.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+        if(partes){
+            ano = Number(partes[1]);
+            mes = Number(partes[2]);
+            dia = Number(partes[3]);
+        }else{
+            partes = texto.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/);
+            if(partes){
+                dia = Number(partes[1]);
+                mes = Number(partes[2]);
+                ano = Number(partes[3]);
+            }
+        }
+    }
+
+    if(!ano || !mes || !dia) return "";
+    const data = new Date(ano, mes - 1, dia);
+    if(data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) return "";
+
+    return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+function converterQuilometrosImportados(valor){
+    const numero = typeof valor === "number"
+        ? valor
+        : Number(String(valor || "").trim().replace(",", "."));
+    return Number.isFinite(numero) ? numero : 0;
+}
+
+async function importarFicheiroKM(input){
+    const ficheiro = input?.files?.[0];
+    if(!ficheiro) return;
+
+    if(typeof XLSX === "undefined"){
+        mostrarEstadoImportacaoKM("Não foi possível iniciar a importação do Excel.", "erro");
+        return;
+    }
+
+    mostrarEstadoImportacaoKM("A validar o ficheiro Excel...", "a-ler");
+
+    try{
+        const livro = XLSX.read(await ficheiro.arrayBuffer(), { type:"array", cellDates:true });
+        const folha = livro.Sheets[livro.SheetNames[0]];
+        if(!folha) throw new Error("O ficheiro não contém nenhuma folha.");
+
+        const grelha = XLSX.utils.sheet_to_json(folha, { header:1, raw:true, defval:"" });
+        if(grelha.length === 0) throw new Error("O ficheiro está vazio.");
+
+        const cabecalhos = (grelha[0] || []).map(normalizarCabecalhoKM);
+        const nomes = {
+            data:["data"],
+            origem:["origem"],
+            destino:["destino"],
+            justificacao:["justificacao"],
+            kms:["quilometros", "kms"]
+        };
+        const indices = {};
+        const emFalta = [];
+
+        Object.entries(nomes).forEach(([campo, alternativas]) => {
+            indices[campo] = cabecalhos.findIndex(c => alternativas.includes(c));
+            if(indices[campo] < 0) emFalta.push(alternativas[0]);
+        });
+
+        if(emFalta.length){
+            throw new Error(`Faltam colunas obrigatórias: ${emFalta.join(", ")}.`);
+        }
+
+        const linhas = [];
+        const erros = [];
+
+        grelha.slice(1).forEach((linha, indice) => {
+            const numeroLinha = indice + 2;
+            const valores = Object.values(indices).map(i => linha[i]);
+            if(valores.every(v => String(v ?? "").trim() === "")) return;
+
+            const data = formatarDataImportadaKM(linha[indices.data]);
+            const origem = String(linha[indices.origem] ?? "").trim();
+            const destino = String(linha[indices.destino] ?? "").trim();
+            const justificacao = String(linha[indices.justificacao] ?? "").trim();
+            const kms = converterQuilometrosImportados(linha[indices.kms]);
+
+            if(!data) erros.push(`Linha ${numeroLinha}: Data inválida ou em falta.`);
+            if(!origem) erros.push(`Linha ${numeroLinha}: Origem em falta.`);
+            if(!destino) erros.push(`Linha ${numeroLinha}: Destino em falta.`);
+            if(!justificacao) erros.push(`Linha ${numeroLinha}: Justificação em falta.`);
+            if(kms <= 0) erros.push(`Linha ${numeroLinha}: Quilómetros inválidos ou em falta.`);
+
+            linhas.push({ data, origem, destino, justificacao, kms });
+        });
+
+        if(linhas.length === 0) erros.push("O ficheiro não contém deslocações para importar.");
+        if(erros.length){
+            throw new Error(`O ficheiro não foi importado.\n${erros.slice(0, 12).join("\n")}${erros.length > 12 ? `\nE mais ${erros.length - 12} erro(s).` : ""}`);
+        }
+
+        const tbody = document.getElementById("linhasKM");
+        tbody.innerHTML = "";
+        linhas.forEach(linha => {
+            const tr = addLinhaKM();
+            tr.querySelector(".data").value = linha.data;
+            tr.querySelector(".origem").value = linha.origem;
+            tr.querySelector(".destino").value = linha.destino;
+            tr.querySelector(".justificacao").value = linha.justificacao;
+            tr.querySelector(".kms").value = linha.kms;
+        });
+        calcularKM();
+        mostrarEstadoImportacaoKM(`${linhas.length} deslocação(ões) importada(s). Confirme os dados antes de submeter.`, "sucesso");
+    }catch(erro){
+        console.error("Erro ao importar deslocações em KM:", erro);
+        mostrarEstadoImportacaoKM(erro.message || "Não foi possível importar o ficheiro Excel.", "erro");
+    }
+}
+
+function obterDadosKMValidados(){
+    const rows = Array.from(document.querySelectorAll("#linhasKM tr"));
+    const erros = [];
+    const linhas = [];
+
+    if(rows.length === 0){
+        erros.push("Tem de inserir pelo menos uma deslocação.");
+    }
+
+    rows.forEach((tr, indice) => {
+        const numeroLinha = indice + 1;
+        const data = tr.querySelector(".data")?.value || "";
+        const origem = tr.querySelector(".origem")?.value.trim() || "";
+        const destino = tr.querySelector(".destino")?.value.trim() || "";
+        const justificacao = tr.querySelector(".justificacao")?.value.trim() || "";
+        const kms = Number(tr.querySelector(".kms")?.value);
+
+        if(!data) erros.push(`Linha ${numeroLinha}: indique a data.`);
+        if(!origem) erros.push(`Linha ${numeroLinha}: indique a origem.`);
+        if(!destino) erros.push(`Linha ${numeroLinha}: indique o destino.`);
+        if(!justificacao) erros.push(`Linha ${numeroLinha}: indique a justificação.`);
+        if(!Number.isFinite(kms) || kms <= 0) erros.push(`Linha ${numeroLinha}: indique quilómetros superiores a zero.`);
+
+        linhas.push({ data, origem, destino, justificacao, kms });
+    });
+
+    const matriculaVeiculo = document.getElementById("matriculaVeiculo")?.value.trim() || "";
+    const valorKM = Number(document.getElementById("valorKM")?.value);
+    const aprovador1 = document.getElementById("aprovador1")?.value || "";
+    const aprovador2 = document.getElementById("aprovador2")?.value || "";
+
+    if(!matriculaVeiculo) erros.push("Tem de indicar a matrícula do veículo.");
+    if(!Number.isFinite(valorKM) || valorKM <= 0) erros.push("O valor por KM tem de ser superior a zero.");
+    if(!aprovador1) erros.push("Tem de selecionar um aprovador.");
+
+    if(erros.length){
+        throw new Error(erros.slice(0, 12).join("\n") + (erros.length > 12 ? `\nE mais ${erros.length - 12} erro(s).` : ""));
+    }
+
+    return { linhas, matriculaVeiculo, valorKM, aprovador1, aprovador2 };
 }
 
 
@@ -232,6 +449,14 @@ async function notificarAutorDecisao(campos, estado, justificacao, decisor){
 
 async function guardarDespesaKM(){
 
+    let dadosValidados;
+    try{
+        dadosValidados = obterDadosKMValidados();
+    }catch(erro){
+        alert("Não é possível registar a nota de despesa:\n\n" + erro.message);
+        return;
+    }
+
     const utilizador = await testarGraph();
     const nomeColaborador = await obterNomeColaboradorDaNota(utilizador);
     const token = await getAccessToken();
@@ -240,63 +465,23 @@ async function guardarDespesaKM(){
     const siteId = site.id;
     const numeroNota = await gerarNumeroNota(token, siteId);
 
-    const linhas = [];
-
-    const rows = document.querySelectorAll("#linhasKM tr");
-
-for(const tr of rows){
-
-    const data = tr.querySelector(".data")?.value || "";
-    const origem = tr.querySelector(".origem")?.value.trim() || "";
-    const destino = tr.querySelector(".destino")?.value.trim() || "";
-    const justificacao = tr.querySelector(".justificacao")?.value.trim() || "";
-    const kms = Number(tr.querySelector(".kms")?.value) || 0;
-
-    if(!data || !origem || !destino || !justificacao || kms <= 0){
-    continue; // ignora só essa linha
-}
-
-    linhas.push({
-        data,
-        origem,
-        destino,
-        justificacao,
-        kms
-    });
-
-}
-
-    if(linhas.length === 0){
-        alert("Tem de inserir pelo menos uma linha.");
-        return;
-    }
+    const {
+        linhas,
+        matriculaVeiculo,
+        valorKM,
+        aprovador1,
+        aprovador2
+    } = dadosValidados;
 
     /* totais */
     let totalKMs = 0;
     linhas.forEach(l => totalKMs += l.kms);
-const matriculaVeiculo =
-    document.getElementById("matriculaVeiculo")
-    ?.value
-    .trim();
-
-if(!matriculaVeiculo){
-    alert("Tem de indicar a matrícula do veículo.");
-    return;
-}
-    const valorKM = Number(document.getElementById("valorKM").value) || 0;
     const totalRecebido = totalKMs * valorKM;
 
     /* JSON */
     const linhasJSON = JSON.stringify(linhas);
 
     const listaNome = "NotasDespesa";
-const aprovador1 = document.getElementById("aprovador1")?.value || "";
-const aprovador2 = document.getElementById("aprovador2")?.value || "";
-
-if(!aprovador1){
-    alert("Tem de selecionar um aprovador.");
-    return;
-}
     const body = {
         fields: {
     Title: numeroNota + " - Nota KM",

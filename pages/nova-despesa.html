@@ -68,6 +68,26 @@ Nova Nota de Despesa
 
 <div id="areaKM" style="display:none; margin-top:20px;">
     <h3>Deslocações em KM</h3>
+
+    <div class="importador-km">
+        <div>
+            <strong>Carregar deslocações através de Excel</strong>
+            <p>Utilize o modelo da aplicação. Se existir uma linha incompleta ou inválida, o ficheiro não será importado.</p>
+        </div>
+        <div class="acoes-importador-km">
+            <button type="button" class="btn-modelo-km" onclick="descarregarModeloKM()">
+                <i data-lucide="download"></i>
+                Descarregar modelo
+            </button>
+            <button type="button" class="btn-importar-km" onclick="abrirImportacaoKM()">
+                <i data-lucide="file-spreadsheet"></i>
+                Importar Excel
+            </button>
+        </div>
+        <input id="ficheiroImportacaoKM" type="file" accept=".xlsx,.xls" hidden onchange="importarFicheiroKM(this)">
+        <div id="estadoImportacaoKM" class="estado-importacao-km" aria-live="polite"></div>
+    </div>
+
     <table>
 <thead>
 <tr>
@@ -229,6 +249,7 @@ Nova Nota de Despesa
 
 <script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>    
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/graph.js"></script>
 <script src="../js/despesas.js"></script>
