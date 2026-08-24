@@ -1,13 +1,37 @@
 async function getAccessToken() {
 
-    const account = msalInstance.getAllAccounts()[0];
+    await promessaRetornoLogin;
+
+    let account = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+
+    if(!account){
+        account = await redirecionarParaLoginSeNecessario();
+    }
+
+    if(!account){
+        throw new Error("A iniciar sessão Microsoft...");
+    }
+
+    msalInstance.setActiveAccount(account);
 
     const request = {
         scopes: ["User.Read"],
         account: account
     };
 
-    const response = await msalInstance.acquireTokenSilent(request);
+    let response;
+
+    try{
+        response = await msalInstance.acquireTokenSilent(request);
+    }catch(erro){
+        console.warn("A sessão precisa de ser renovada:", erro);
+        guardarDestinoDepoisDoLogin(window.location.href);
+        await msalInstance.acquireTokenRedirect({
+            ...request,
+            redirectStartPage: window.location.href
+        });
+        throw new Error("A renovar a sessão Microsoft...");
+    }
 
     return response.accessToken;
 

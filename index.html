@@ -277,6 +277,7 @@ try{
 
 // espera um pouco para garantir msal carregado
 await new Promise(r => setTimeout(r, 300));
+await promessaRetornoLogin;
 
 if(typeof msalInstance === "undefined") return;
 
@@ -300,7 +301,7 @@ texto.innerText = "Bem-vindo, " + primeiroNome;
 
 /* entrar */
 setTimeout(() => {
-    window.location.replace("pages/dashboard.html");
+    window.location.replace(obterDestinoDepoisDoLogin());
 }, 1800);
 
 }
