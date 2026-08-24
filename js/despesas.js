@@ -586,6 +586,7 @@ const body = {
 async function carregarDashboardDespesas(){
 
     const utilizador = await testarGraph();
+    const perfil = await obterPerfilUtilizador();
     const token = await getAccessToken();
     const site = await obterSiteApp();
     const siteId = site.id;
@@ -598,9 +599,23 @@ async function carregarDashboardDespesas(){
     );
 
     const data = await resp.json();
-    const items = data.value || [];
+    const todosOsItems = data.value || [];
 
-    const email = utilizador.mail || utilizador.userPrincipalName;
+    const email = String(
+        utilizador.mail || utilizador.userPrincipalName || ""
+    ).trim().toLowerCase();
+    const podeVerTodas = perfil === "Admin" || perfil === "GestorFaturas";
+
+    const items = podeVerTodas
+        ? todosOsItems
+        : todosOsItems.filter(item => {
+            const campos = item.fields || {};
+            const emailSubmissor = String(campos.CriadoPorEmail || "").trim().toLowerCase();
+            const aprovador1 = String(campos.Aprovador1Email || "").trim().toLowerCase();
+            const aprovador2 = String(campos.Aprovador2Email || "").trim().toLowerCase();
+
+            return emailSubmissor === email || aprovador1 === email || aprovador2 === email;
+        });
 
     let total = items.length;
     let pendentes = 0;
@@ -615,7 +630,10 @@ async function carregarDashboardDespesas(){
         if(f.Estado === "Pendente"){
             pendentes++;
 
-            if(f.Aprovador1Email === email || f.Aprovador2Email === email){
+            if(
+                String(f.Aprovador1Email || "").trim().toLowerCase() === email ||
+                String(f.Aprovador2Email || "").trim().toLowerCase() === email
+            ){
                 meusPendentes++;
             }
         }
