@@ -614,7 +614,10 @@ async function carregarDashboardDespesas(){
             const aprovador1 = String(campos.Aprovador1Email || "").trim().toLowerCase();
             const aprovador2 = String(campos.Aprovador2Email || "").trim().toLowerCase();
 
-            return emailSubmissor === email || aprovador1 === email || aprovador2 === email;
+            const pendenteParaAprovar = campos.Estado === "Pendente" &&
+                (aprovador1 === email || aprovador2 === email);
+
+            return emailSubmissor === email || pendenteParaAprovar;
         });
 
     let total = items.length;
@@ -1545,6 +1548,231 @@ function addLinhaDespesa(){
 
     tbody.appendChild(tr);
 
+    return tr;
+
+}
+
+/* =============================
+   LEITURA DO QR CODE DA FATURA
+============================= */
+
+function abrirLeitorQRFatura(){
+
+    const input = document.getElementById("imagemQRFatura");
+
+    if(!input) return;
+
+    input.value = "";
+    input.click();
+
+}
+
+function mostrarEstadoLeituraQR(mensagem, tipo = ""){
+
+    const estado = document.getElementById("estadoLeituraQR");
+
+    if(!estado) return;
+
+    estado.textContent = mensagem;
+    estado.className = "estado-leitura-qr" + (tipo ? " " + tipo : "");
+
+}
+
+function converterDataQRFatura(valor){
+
+    const data = String(valor || "").replace(/[^0-9]/g, "");
+
+    if(data.length !== 8) return "";
+
+    const ano = data.slice(0, 4);
+    const mes = data.slice(4, 6);
+    const dia = data.slice(6, 8);
+    const dataISO = `${ano}-${mes}-${dia}`;
+    const validacao = new Date(`${dataISO}T00:00:00`);
+
+    if(
+        Number.isNaN(validacao.getTime()) ||
+        validacao.getFullYear() !== Number(ano) ||
+        validacao.getMonth() + 1 !== Number(mes) ||
+        validacao.getDate() !== Number(dia)
+    ) return "";
+
+    return dataISO;
+
+}
+
+function converterValorQRFatura(valor){
+
+    const numero = Number(String(valor || "").trim().replace(",", "."));
+
+    return Number.isFinite(numero) ? numero : 0;
+
+}
+
+function interpretarQRFatura(conteudo){
+
+    const texto = String(conteudo || "").trim();
+    const campos = {};
+    const regex = /(?:^|\*)([A-Z](?:\d)?):([^*]*)/g;
+    let correspondencia;
+
+    while((correspondencia = regex.exec(texto)) !== null){
+        campos[correspondencia[1]] = correspondencia[2].trim();
+    }
+
+    if(!campos.A || !campos.F || !campos.O){
+        throw new Error("O QR Code encontrado não corresponde a uma fatura portuguesa válida.");
+    }
+
+    const dados = {
+        nifFornecedor: campos.A || "",
+        nifAdquirente: campos.B || "",
+        tipoDocumento: campos.D || "",
+        data: converterDataQRFatura(campos.F),
+        numeroDocumento: campos.G || "",
+        atcud: campos.H || "",
+        totalImpostos: converterValorQRFatura(campos.N),
+        totalDocumento: converterValorQRFatura(campos.O),
+        conteudoOriginal: texto
+    };
+
+    if(!dados.data || dados.totalDocumento <= 0){
+        throw new Error("O QR Code não contém uma data e um valor total válidos.");
+    }
+
+    return dados;
+
+}
+
+async function obterImagemParaLeituraQR(ficheiro){
+
+    const url = URL.createObjectURL(ficheiro);
+
+    try{
+        const imagem = new Image();
+        imagem.src = url;
+        await imagem.decode();
+
+        const limite = 1800;
+        const escala = Math.min(1, limite / Math.max(imagem.naturalWidth, imagem.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(imagem.naturalWidth * escala));
+        canvas.height = Math.max(1, Math.round(imagem.naturalHeight * escala));
+
+        const contexto = canvas.getContext("2d", { willReadFrequently:true });
+        contexto.drawImage(imagem, 0, 0, canvas.width, canvas.height);
+
+        return contexto.getImageData(0, 0, canvas.width, canvas.height);
+    }finally{
+        URL.revokeObjectURL(url);
+    }
+
+}
+
+function associarFicheiroALinha(ficheiro, inputFicheiro){
+
+    if(!ficheiro || !inputFicheiro || typeof DataTransfer === "undefined") return;
+
+    const transferencia = new DataTransfer();
+    transferencia.items.add(ficheiro);
+    inputFicheiro.files = transferencia.files;
+
+}
+
+function preencherLinhaComQRFatura(dados, ficheiro){
+
+    const linhas = Array.from(document.querySelectorAll("#linhasDespesas tr"));
+
+    const repetida = linhas.some(tr => {
+        const mesmoAtcud = dados.atcud && tr.dataset.qrAtcud === dados.atcud;
+        const mesmoDocumento = dados.numeroDocumento &&
+            tr.dataset.qrNifFornecedor === dados.nifFornecedor &&
+            tr.dataset.qrNumeroDocumento === dados.numeroDocumento;
+
+        return mesmoAtcud || mesmoDocumento;
+    });
+
+    if(repetida){
+        throw new Error("Esta fatura já foi adicionada à nota de despesa.");
+    }
+
+    let linha = linhas.find(tr => {
+        const data = tr.querySelector(".dataDespesa")?.value;
+        const descricao = tr.querySelector(".descricao")?.value;
+        const valor = tr.querySelector(".valorDespesa")?.value;
+        const anexo = tr.querySelector(".ficheiroDespesa")?.files?.length;
+        return !data && !descricao && !valor && !anexo;
+    });
+
+    if(!linha){
+        linha = addLinhaDespesa();
+    }
+
+    linha.querySelector(".dataDespesa").value = dados.data;
+    linha.querySelector(".valorDespesa").value = dados.totalDocumento.toFixed(2);
+    linha.querySelector(".descricao").value = dados.numeroDocumento
+        ? `Fatura ${dados.numeroDocumento}`
+        : `Fatura - NIF ${dados.nifFornecedor}`;
+
+    associarFicheiroALinha(ficheiro, linha.querySelector(".ficheiroDespesa"));
+
+    linha.dataset.qrNifFornecedor = dados.nifFornecedor;
+    linha.dataset.qrNifAdquirente = dados.nifAdquirente;
+    linha.dataset.qrTipoDocumento = dados.tipoDocumento;
+    linha.dataset.qrNumeroDocumento = dados.numeroDocumento;
+    linha.dataset.qrAtcud = dados.atcud;
+    linha.dataset.qrTotalImpostos = String(dados.totalImpostos);
+    linha.dataset.qrConteudo = dados.conteudoOriginal;
+
+    let resumo = linha.querySelector(".resumo-qr-fatura");
+
+    if(!resumo){
+        resumo = document.createElement("div");
+        resumo.className = "resumo-qr-fatura";
+        linha.querySelector(".descricao").insertAdjacentElement("afterend", resumo);
+    }
+
+    resumo.textContent = [
+        dados.nifFornecedor ? `NIF: ${dados.nifFornecedor}` : "",
+        dados.atcud ? `ATCUD: ${dados.atcud}` : ""
+    ].filter(Boolean).join(" · ");
+
+    calcularTotalDespesas();
+    linha.scrollIntoView({ behavior:"smooth", block:"center" });
+
+}
+
+async function lerQRFaturaSelecionada(input){
+
+    const ficheiro = input?.files?.[0];
+
+    if(!ficheiro) return;
+
+    if(typeof jsQR !== "function"){
+        mostrarEstadoLeituraQR("Não foi possível iniciar o leitor. Pode preencher a despesa manualmente.", "erro");
+        return;
+    }
+
+    mostrarEstadoLeituraQR("A ler o QR Code da fatura...", "a-ler");
+
+    try{
+        const imagem = await obterImagemParaLeituraQR(ficheiro);
+        const resultado = jsQR(imagem.data, imagem.width, imagem.height, {
+            inversionAttempts:"attemptBoth"
+        });
+
+        if(!resultado?.data){
+            throw new Error("Não foi possível ler o QR Code. Tire uma fotografia mais próxima, com boa luz, ou preencha a despesa manualmente.");
+        }
+
+        const dados = interpretarQRFatura(resultado.data);
+        preencherLinhaComQRFatura(dados, ficheiro);
+        mostrarEstadoLeituraQR("QR Code lido. Confirme a rubrica, a descrição e os valores antes de submeter.", "sucesso");
+    }catch(erro){
+        console.error("Erro ao ler QR Code da fatura:", erro);
+        mostrarEstadoLeituraQR(erro.message || "Não foi possível ler o QR Code da fatura.", "erro");
+    }
+
 }
 
 
@@ -1697,7 +1925,28 @@ linhas.push({
         ficheiroInfo?.url || "",
 
     ficheiroDownloadUrl:
-        ficheiroInfo?.downloadUrl || ""
+        ficheiroInfo?.downloadUrl || "",
+
+    qrNifFornecedor:
+        tr.dataset.qrNifFornecedor || "",
+
+    qrNifAdquirente:
+        tr.dataset.qrNifAdquirente || "",
+
+    qrTipoDocumento:
+        tr.dataset.qrTipoDocumento || "",
+
+    qrNumeroDocumento:
+        tr.dataset.qrNumeroDocumento || "",
+
+    qrAtcud:
+        tr.dataset.qrAtcud || "",
+
+    qrTotalImpostos:
+        Number(tr.dataset.qrTotalImpostos) || 0,
+
+    qrConteudo:
+        tr.dataset.qrConteudo || ""
 
 });
 
