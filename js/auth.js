@@ -68,16 +68,11 @@ async function login(destino) {
             guardarDestinoDepoisDoLogin(destino || window.location.href);
         }
 
-        const response = await msalInstance.loginPopup({
+        await msalInstance.loginRedirect({
             ...loginRequest,
-            prompt: "select_account"
+            prompt: "select_account",
+            redirectStartPage: destino || window.location.href
         });
-
-        msalInstance.setActiveAccount(response.account);
-
-        console.log("Login efetuado:", response.account);
-
-        window.location.href = obterDestinoDepoisDoLogin();
 
     } catch (error) {
 
