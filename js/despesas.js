@@ -402,7 +402,7 @@ async function notificarAprovadoresNota(campos){
     const tipo = campos.TipoDocumento === "KMS"
         ? "Deslocação em KMs"
         : "Outras despesas";
-    const link = "https://montedopasto.github.io/gestaodespesas/pages/aprovacoes-despesas.html";
+    const link = "https://gestaodedespesas.montedopasto.pt/pages/aprovacoes-despesas.html";
     const html = construirEmailBase("Nova nota para aprovação", `
         <p>Foi submetida uma nova nota de despesa que aguarda a sua decisão.</p>
         <table style="border-collapse:collapse;width:100%">

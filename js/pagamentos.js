@@ -255,7 +255,7 @@ function mostrarDevolucaoCorrecao(){
 }
 
 async function notificarAutorCorrecao(campos, motivo, responsavel){
-    const link = "https://montedopasto.github.io/gestaodespesas/pages/dashboard.html";
+    const link = "https://gestaodedespesas.montedopasto.pt/pages/dashboard.html";
     const html = `
         <div style="font-family:Arial,sans-serif;color:#1e293b;line-height:1.55;max-width:640px">
             <div style="background:#b45309;color:white;padding:18px 22px;border-radius:10px 10px 0 0">
@@ -282,7 +282,7 @@ async function notificarAutorCorrecao(campos, motivo, responsavel){
 }
 
 async function notificarAutorPagamento(campos, pagamento){
-    const link = "https://montedopasto.github.io/gestaodespesas/pages/dashboard.html";
+    const link = "https://gestaodedespesas.montedopasto.pt/pages/dashboard.html";
     const notasHTML = pagamento.notas
         ? `<p style="background:#f0fdf4;border-left:4px solid #166534;padding:12px"><b>Notas do pagamento:</b><br>${escaparHTML(pagamento.notas)}</p>`
         : "";

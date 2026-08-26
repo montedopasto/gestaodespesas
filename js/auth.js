@@ -1,8 +1,12 @@
+const emGitHubPages = window.location.hostname.endsWith(".github.io");
+const caminhoBaseAplicacao = emGitHubPages ? "/gestaodespesas/" : "/";
+const urlBaseAplicacao = window.location.origin + caminhoBaseAplicacao;
+
 const msalConfig = {
     auth: {
         clientId: "81a4b1c0-13eb-4c3e-bb82-283fa7d52334",
         authority: "https://login.microsoftonline.com/ee417351-ea90-41e0-9147-5ea6ab38ea49",
-        redirectUri: "https://montedopasto.github.io/gestaodespesas/"
+        redirectUri: urlBaseAplicacao
     }
 };
 
@@ -41,13 +45,13 @@ function obterDestinoDepoisDoLogin(){
     const guardado = sessionStorage.getItem("gestaoDespesasDestinoLogin");
     sessionStorage.removeItem("gestaoDespesasDestinoLogin");
 
-    if(guardado?.startsWith("/gestaodespesas/")){
+    if(guardado?.startsWith(caminhoBaseAplicacao)){
         return guardado;
     }
 
     return paginaAtualProtegida()
         ? window.location.pathname + window.location.search + window.location.hash
-        : "/gestaodespesas/pages/dashboard.html";
+        : caminhoBaseAplicacao + "pages/dashboard.html";
 }
 
 async function login(destino) {
