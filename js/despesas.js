@@ -808,6 +808,7 @@ async function carregarDashboardDespesas(){
     let total = items.length;
     let pendentes = 0;
     let aprovados = 0;
+    let pagas = 0;
     let rejeitados = 0;
     let meusPendentes = 0;
 
@@ -826,7 +827,8 @@ async function carregarDashboardDespesas(){
             }
         }
 
-        if(f.Estado === "Aprovado") aprovados++;
+        if(f.EstadoPagamento === "Pago") pagas++;
+        else if(f.Estado === "Aprovado") aprovados++;
         if(f.Estado === "Rejeitado") rejeitados++;
 
     });
@@ -834,6 +836,7 @@ async function carregarDashboardDespesas(){
     document.getElementById("totalPedidos").innerText = total;
     document.getElementById("pendentes").innerText = pendentes;
     document.getElementById("aprovados").innerText = aprovados;
+    document.getElementById("pagas").innerText = pagas;
     document.getElementById("rejeitados").innerText = rejeitados;
     document.getElementById("meusPendentes").innerText = meusPendentes;
 /* =============================
@@ -855,6 +858,12 @@ items.forEach(item => {
 
     const f = item.fields;
     const emCorrecao = notaTemCorrecao(f);
+    const paga = f.EstadoPagamento === "Pago";
+    const estadoVisual = paga
+        ? "Pago"
+        : emCorrecao
+            ? "Correção solicitada"
+            : f.Estado;
 
     const linha = document.createElement("tr");
 
@@ -881,6 +890,13 @@ items.forEach(item => {
         font-size:13px;
 
         ${
+            paga
+            ?
+            `
+            background:#dbeafe;
+            color:#1d4ed8;
+            `
+            :
             emCorrecao
             ?
             `
@@ -909,7 +925,7 @@ items.forEach(item => {
         }
     ">
 
-        ${emCorrecao ? "Correção solicitada" : f.Estado}
+        ${estadoVisual}
 
     </span>
 
@@ -921,6 +937,8 @@ items.forEach(item => {
     </td>
 `;
 linha.style.cursor = "pointer";
+linha.dataset.estado = estadoVisual;
+linha.dataset.pesquisa = linha.innerText.toLowerCase();
     /* abrir PDF ao clicar */
     linha.onclick = () => {
     verDetalheKM(item.id);
@@ -931,6 +949,22 @@ if (window.lucide) {
     lucide.createIcons();
 }
 });
+
+const aplicarFiltrosDashboard = () => {
+    const pesquisa = document.getElementById("filtroPesquisa")?.value.trim().toLowerCase() || "";
+    const estado = document.getElementById("filtroEstado")?.value || "";
+
+    tabela.querySelectorAll("tr").forEach(linha => {
+        const correspondePesquisa = !pesquisa || linha.dataset.pesquisa.includes(pesquisa);
+        const correspondeEstado = !estado || linha.dataset.estado === estado;
+        linha.style.display = correspondePesquisa && correspondeEstado ? "" : "none";
+    });
+};
+
+const filtroPesquisa = document.getElementById("filtroPesquisa");
+const filtroEstado = document.getElementById("filtroEstado");
+if(filtroPesquisa) filtroPesquisa.oninput = aplicarFiltrosDashboard;
+if(filtroEstado) filtroEstado.onchange = aplicarFiltrosDashboard;
 }
 window.fecharModalKM = function(){
     document.getElementById("modalKM").style.display = "none";
@@ -973,7 +1007,19 @@ if(zonaEstado && carimbo && caixaJustificacao && textoJustificacao){
     caixaJustificacao.style.display = "none";
     textoJustificacao.innerText = "";
 
-    if(emCorrecao){
+    if(f.EstadoPagamento === "Pago"){
+        const dataHora = f.DataPagamento
+            ? new Date(f.DataPagamento).toLocaleString("pt-PT")
+            : "";
+        carimbo.innerHTML = `
+            € PAGO
+            ${dataHora ? `<div style="font-size:11px; margin-top:4px; opacity:0.9;">${dataHora}</div>` : ""}
+        `;
+        carimbo.style.background = "#1d4ed8";
+        carimbo.style.transform = "rotate(-3deg)";
+        carimbo.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+    }
+    else if(emCorrecao){
         carimbo.innerText = "↩ CORREÇÃO SOLICITADA";
         carimbo.style.background = "#b45309";
         carimbo.style.transform = "rotate(-3deg)";
