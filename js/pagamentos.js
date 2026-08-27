@@ -351,9 +351,6 @@ async function devolverParaCorrecao(){
 
         const nome = utilizador.displayName || "-";
         const email = utilizador.mail || utilizador.userPrincipalName;
-        const nomePagador = utilizador.displayName || "-";
-        const emailPagador = utilizador.mail || utilizador.userPrincipalName;
-        const dataPagamento = new Date().toISOString();
         const resp = await fetch(`${url}/fields`, {
             method:"PATCH",
             headers:{
@@ -421,6 +418,10 @@ async function confirmarPagamento(){
         if(despesaEmCorrecao(atual.fields)){
             throw new Error("Esta nota está a aguardar a correção dos valores.");
         }
+
+        const nomePagador = utilizador.displayName || "-";
+        const emailPagador = utilizador.mail || utilizador.userPrincipalName;
+        const dataPagamento = new Date().toISOString();
 
         const resp = await fetch(`${url}/fields`, {
             method:"PATCH",
