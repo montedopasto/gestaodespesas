@@ -431,7 +431,6 @@ async function confirmarPagamento(){
             },
             body:JSON.stringify({
                 EstadoPagamento:"Pago",
-                Pago:true,
                 PagoPorNome:nomePagador,
                 PagoPorEmail:emailPagador,
                 DataPagamento:dataPagamento,
