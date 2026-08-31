@@ -156,7 +156,7 @@ Nova Nota de Despesa
     <div class="leitor-qr-fatura">
         <div>
             <strong>Ler dados da fatura</strong>
-            <p>Fotografe o QR Code ou escolha uma imagem da fatura. A data, o valor e os dados fiscais serão preenchidos automaticamente.</p>
+            <p>Fotografe o QR Code ou escolha uma imagem/PDF da fatura. A data, o número da fatura, o valor e os dados fiscais serão preenchidos automaticamente.</p>
         </div>
         <button type="button" class="btn-ler-qr" onclick="abrirLeitorQRFatura()">
             <i data-lucide="scan-line"></i>
@@ -165,8 +165,7 @@ Nova Nota de Despesa
         <input
             id="imagemQRFatura"
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/*,.pdf,application/pdf"
             hidden
             onchange="lerQRFaturaSelecionada(this)"
         >
@@ -180,8 +179,9 @@ Nova Nota de Despesa
     <th>Data</th>
     <th>Rubrica</th>
     <th>Descrição</th>
+    <th>N.º fatura</th>
     <th>Valor (€)</th>
-    <th>Fatura</th>
+    <th>Anexo</th>
     <th></th>
 </tr>
         </thead>
@@ -249,6 +249,7 @@ Nova Nota de Despesa
 
 <script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>    
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/graph.js"></script>

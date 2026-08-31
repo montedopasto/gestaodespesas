@@ -1091,8 +1091,9 @@ if(f.TipoDocumento === "DESPESA"){
             <th>Data</th>
             <th>Rubrica</th>
             <th>Descrição</th>
+            <th>N.º fatura</th>
             <th>Valor</th>
-            <th>Fatura</th>
+            <th>Anexo</th>
         </tr>
     `;
 
@@ -1107,6 +1108,8 @@ if(f.TipoDocumento === "DESPESA"){
             <td>${l.rubrica}</td>
 
             <td>${l.descricao}</td>
+
+            <td>${l.numeroFatura || l.qrNumeroDocumento || "-"}</td>
 
             <td>${podeCorrigir
                 ? `<input class="campo-valor-correcao valor-linha-correcao" type="number" min="0.01" step="0.01" data-indice="${indice}" value="${Number(l.valor).toFixed(2)}">`
@@ -1526,6 +1529,7 @@ novaLinha(new Date(f.Modified).toLocaleString("pt-PT"));
         novaLinha("Data: " + (l.data || "-"));
         novaLinha("Rubrica: " + (l.rubrica || "-"));
         novaLinha("Descrição: " + (l.descricao || "-"));
+        novaLinha("N.º fatura: " + (l.numeroFatura || l.qrNumeroDocumento || "-"));
 
         novaLinha(
             "Valor: " +
@@ -1753,7 +1757,11 @@ function addLinhaDespesa(){
     </td>
 
     <td>
-        <input type="text" class="descricao">
+        <input type="text" class="descricao" required placeholder="Descrição obrigatória">
+    </td>
+
+    <td>
+        <input type="text" class="numeroFatura" placeholder="N.º da fatura">
     </td>
 
     <td>
@@ -1900,6 +1908,51 @@ async function obterImagemParaLeituraQR(ficheiro){
 
 }
 
+async function obterPaginasPdfParaLeituraQR(ficheiro){
+
+    if(typeof pdfjsLib === "undefined"){
+        throw new Error("Não foi possível iniciar a leitura do PDF. Tente novamente ou use uma imagem.");
+    }
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    const dadosPdf = await ficheiro.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data:dadosPdf }).promise;
+    const paginas = [];
+
+    for(let numeroPagina = 1; numeroPagina <= pdf.numPages; numeroPagina++){
+        const pagina = await pdf.getPage(numeroPagina);
+        const viewportInicial = pagina.getViewport({ scale:1 });
+        const escala = Math.min(3, 2200 / Math.max(viewportInicial.width, viewportInicial.height));
+        const viewport = pagina.getViewport({ scale:Math.max(1.5, escala) });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        const contexto = canvas.getContext("2d", { willReadFrequently:true });
+
+        await pagina.render({ canvasContext:contexto, viewport }).promise;
+        paginas.push(contexto.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    return paginas;
+
+}
+
+async function obterImagensParaLeituraQR(ficheiro){
+
+    const ePdf = ficheiro.type === "application/pdf" || /\.pdf$/i.test(ficheiro.name);
+
+    if(ePdf) return obterPaginasPdfParaLeituraQR(ficheiro);
+
+    if(!ficheiro.type.startsWith("image/")){
+        throw new Error("Selecione uma imagem ou um ficheiro PDF.");
+    }
+
+    return [await obterImagemParaLeituraQR(ficheiro)];
+
+}
+
 function associarFicheiroALinha(ficheiro, inputFicheiro){
 
     if(!ficheiro || !inputFicheiro || typeof DataTransfer === "undefined") return;
@@ -1930,9 +1983,10 @@ function preencherLinhaComQRFatura(dados, ficheiro){
     let linha = linhas.find(tr => {
         const data = tr.querySelector(".dataDespesa")?.value;
         const descricao = tr.querySelector(".descricao")?.value;
+        const numeroFatura = tr.querySelector(".numeroFatura")?.value;
         const valor = tr.querySelector(".valorDespesa")?.value;
         const anexo = tr.querySelector(".ficheiroDespesa")?.files?.length;
-        return !data && !descricao && !valor && !anexo;
+        return !data && !descricao && !numeroFatura && !valor && !anexo;
     });
 
     if(!linha){
@@ -1941,9 +1995,7 @@ function preencherLinhaComQRFatura(dados, ficheiro){
 
     linha.querySelector(".dataDespesa").value = dados.data;
     linha.querySelector(".valorDespesa").value = dados.totalDocumento.toFixed(2);
-    linha.querySelector(".descricao").value = dados.numeroDocumento
-        ? `Fatura ${dados.numeroDocumento}`
-        : `Fatura - NIF ${dados.nifFornecedor}`;
+    linha.querySelector(".numeroFatura").value = dados.numeroDocumento || "";
 
     associarFicheiroALinha(ficheiro, linha.querySelector(".ficheiroDespesa"));
 
@@ -1964,6 +2016,7 @@ function preencherLinhaComQRFatura(dados, ficheiro){
     }
 
     resumo.textContent = [
+        dados.numeroDocumento ? `Fatura: ${dados.numeroDocumento}` : "",
         dados.nifFornecedor ? `NIF: ${dados.nifFornecedor}` : "",
         dados.atcud ? `ATCUD: ${dados.atcud}` : ""
     ].filter(Boolean).join(" · ");
@@ -1987,18 +2040,23 @@ async function lerQRFaturaSelecionada(input){
     mostrarEstadoLeituraQR("A ler o QR Code da fatura...", "a-ler");
 
     try{
-        const imagem = await obterImagemParaLeituraQR(ficheiro);
-        const resultado = jsQR(imagem.data, imagem.width, imagem.height, {
-            inversionAttempts:"attemptBoth"
-        });
+        const imagens = await obterImagensParaLeituraQR(ficheiro);
+        let resultado = null;
+
+        for(const imagem of imagens){
+            resultado = jsQR(imagem.data, imagem.width, imagem.height, {
+                inversionAttempts:"attemptBoth"
+            });
+            if(resultado?.data) break;
+        }
 
         if(!resultado?.data){
-            throw new Error("Não foi possível ler o QR Code. Tire uma fotografia mais próxima, com boa luz, ou preencha a despesa manualmente.");
+            throw new Error("Não foi possível encontrar o QR Code na imagem ou no PDF. Use um ficheiro mais nítido ou preencha a despesa manualmente.");
         }
 
         const dados = interpretarQRFatura(resultado.data);
         preencherLinhaComQRFatura(dados, ficheiro);
-        mostrarEstadoLeituraQR("QR Code lido. Confirme a rubrica, a descrição e os valores antes de submeter.", "sucesso");
+        mostrarEstadoLeituraQR("QR Code lido. Preencha obrigatoriamente a rubrica e a descrição e confirme os restantes dados.", "sucesso");
     }catch(erro){
         console.error("Erro ao ler QR Code da fatura:", erro);
         mostrarEstadoLeituraQR(erro.message || "Não foi possível ler o QR Code da fatura.", "erro");
@@ -2121,14 +2179,24 @@ async function guardarOutrasDespesas(){
         const descricao =
             tr.querySelector(".descricao")?.value || "";
 
+        const numeroFatura =
+            tr.querySelector(".numeroFatura")?.value.trim() || "";
+
         const valor =
             Number(
                 tr.querySelector(".valorDespesa")?.value
             ) || 0;
       const ficheiro =
     tr.querySelector(".ficheiroDespesa")?.files[0];
-        if(!data || !rubrica || !descricao || valor <= 0){
+        const linhaVazia = !data && !rubrica && !descricao && !numeroFatura && valor <= 0 && !ficheiro;
+
+        if(linhaVazia){
             continue;
+        }
+
+        if(!data || !rubrica || !descricao.trim() || valor <= 0){
+            alert("Preencha a data, a rubrica, a descrição e um valor válido em todas as despesas inseridas.");
+            return;
         }
 
         let ficheiroInfo = null;
@@ -2147,6 +2215,7 @@ linhas.push({
     data,
     rubrica,
     descricao,
+    numeroFatura,
     valor,
 
     ficheiroNome:
