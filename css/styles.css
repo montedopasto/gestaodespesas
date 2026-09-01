@@ -821,6 +821,17 @@ color:#166534;
 overflow-wrap:anywhere;
 }
 
+.estado-aprovador-fixo{
+    margin-top:8px;
+    color:#166534;
+    font-size:14px;
+    font-weight:600;
+}
+
+.estado-aprovador-fixo.erro{
+    color:#b91c1c;
+}
+
 @media (max-width:760px){
     .leitor-qr-fatura{grid-template-columns:1fr;}
     .btn-ler-qr{width:100%; margin-top:8px;}

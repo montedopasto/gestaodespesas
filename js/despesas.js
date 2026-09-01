@@ -323,6 +323,155 @@ async function obterNomeColaboradorDaNota(utilizador){
     return nomeIndicado || utilizador.displayName;
 }
 
+let configuracaoAprovadorFixoPromise = null;
+let versaoConfiguracaoAprovadores = 0;
+
+async function obterAprovadorFixoUtilizador(){
+
+    if(configuracaoAprovadorFixoPromise) return configuracaoAprovadorFixoPromise;
+
+    configuracaoAprovadorFixoPromise = (async () => {
+        const token = await getAccessToken();
+        const utilizador = await testarGraph();
+        const email = String(utilizador.mail || utilizador.userPrincipalName || "").trim().toLowerCase();
+        const site = await obterSiteApp();
+        const resposta = await fetch(
+            `https://graph.microsoft.com/v1.0/sites/${site.id}/lists/UtilizadoresApp/items?expand=fields`,
+            { headers:{ Authorization:"Bearer " + token } }
+        );
+
+        if(!resposta.ok){
+            throw new Error("Não foi possível consultar o aprovador fixo.");
+        }
+
+        const dados = await resposta.json();
+        const registo = (dados.value || []).find(item =>
+            String(item.fields?.Email || "").trim().toLowerCase() === email
+        );
+
+        return String(registo?.fields?.AprovadorEmail || "").trim();
+    })();
+
+    try{
+        return await configuracaoAprovadorFixoPromise;
+    }catch(erro){
+        configuracaoAprovadorFixoPromise = null;
+        throw erro;
+    }
+}
+
+function definirEstadoAprovadorFixo(elemento, mensagem, erro = false){
+    if(!elemento) return;
+    elemento.textContent = mensagem;
+    elemento.classList.toggle("erro", erro);
+}
+
+function selecionarAprovadorFixo(select, email){
+    if(!select) return;
+
+    let opcao = Array.from(select.options).find(item =>
+        String(item.value).toLowerCase() === email.toLowerCase()
+    );
+
+    if(!opcao){
+        opcao = document.createElement("option");
+        opcao.value = email;
+        opcao.textContent = email;
+        select.appendChild(opcao);
+    }
+
+    select.value = opcao.value;
+    select.disabled = true;
+}
+
+function configurarSelecaoManualAprovadores(){
+    const configuracoes = [
+        ["aprovador1", "aprovador2", "btnSegundoAprovadorKM", "estadoAprovadorFixoKM"],
+        ["aprovador1Despesa", "aprovador2Despesa", "btnSegundoAprovadorDespesa", "estadoAprovadorFixoDespesa"]
+    ];
+
+    configuracoes.forEach(([id1, id2, idBotao, idEstado]) => {
+        const select1 = document.getElementById(id1);
+        const select2 = document.getElementById(id2);
+        const botao = document.getElementById(idBotao);
+        const estado = document.getElementById(idEstado);
+
+        if(select1){
+            select1.disabled = false;
+            select1.value = "";
+        }
+        if(select2){
+            select2.disabled = false;
+            select2.value = "";
+        }
+        if(botao) botao.style.display = "inline-block";
+        definirEstadoAprovadorFixo(estado, "Escolha o aprovador para este colaborador.");
+    });
+}
+
+async function configurarModoAprovadores(){
+    const versaoAtual = ++versaoConfiguracaoAprovadores;
+    const perfil = await obterPerfilUtilizador();
+    if(versaoAtual !== versaoConfiguracaoAprovadores) return;
+
+    const podeCriarEmNomeDe = perfil === "Admin" || perfil === "GestorFaturas";
+    const nomeOutro = document.getElementById("nomeColaborador")?.value.trim() || "";
+
+    if(podeCriarEmNomeDe && nomeOutro){
+        configurarSelecaoManualAprovadores();
+        return;
+    }
+
+    const configuracoes = [
+        ["aprovador1", "aprovador2", "btnSegundoAprovadorKM", "segundoAprovadorBox", "estadoAprovadorFixoKM"],
+        ["aprovador1Despesa", "aprovador2Despesa", "btnSegundoAprovadorDespesa", "segundoAprovadorDespesaBox", "estadoAprovadorFixoDespesa"]
+    ];
+
+    try{
+        const aprovadorEmail = await obterAprovadorFixoUtilizador();
+        if(versaoAtual !== versaoConfiguracaoAprovadores) return;
+
+        configuracoes.forEach(([id1, id2, idBotao, idSegundoBox, idEstado]) => {
+            const select1 = document.getElementById(id1);
+            const select2 = document.getElementById(id2);
+            const botao = document.getElementById(idBotao);
+            const segundoBox = document.getElementById(idSegundoBox);
+            const estado = document.getElementById(idEstado);
+
+            if(select2){
+                select2.value = "";
+                select2.disabled = true;
+            }
+            if(botao) botao.style.display = "none";
+            if(segundoBox) segundoBox.style.display = "none";
+
+            if(aprovadorEmail){
+                selecionarAprovadorFixo(select1, aprovadorEmail);
+                definirEstadoAprovadorFixo(estado, "Aprovador definido automaticamente.");
+            }else{
+                if(select1){
+                    select1.value = "";
+                    select1.disabled = true;
+                }
+                definirEstadoAprovadorFixo(
+                    estado,
+                    "O seu aprovador fixo ainda não está configurado. Contacte o administrador.",
+                    true
+                );
+            }
+        });
+    }catch(erro){
+        console.error("Erro ao configurar aprovador fixo:", erro);
+        configuracoes.forEach(([, , , , idEstado]) => {
+            definirEstadoAprovadorFixo(
+                document.getElementById(idEstado),
+                "Não foi possível carregar o aprovador fixo.",
+                true
+            );
+        });
+    }
+}
+
 async function obterTodasNotasDespesa(token, siteId){
 
     let url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/NotasDespesa/items?expand=fields`;

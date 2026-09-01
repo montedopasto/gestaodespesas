@@ -973,6 +973,10 @@ select2.appendChild(opt2);
 
 });
 
+if(typeof configurarModoAprovadores === "function"){
+await configurarModoAprovadores();
+}
+
 }
 async function carregarAprovacoes(){
 

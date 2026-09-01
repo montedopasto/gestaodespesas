@@ -131,10 +131,11 @@ Nova Nota de Despesa
 
 <label>Aprovador</label><br>
 <select id="aprovador1"></select>
+<div id="estadoAprovadorFixoKM" class="estado-aprovador-fixo"></div>
 
 <br><br>
 
-<button type="button" onclick="mostrarSegundoAprovador()">
+<button id="btnSegundoAprovadorKM" type="button" onclick="mostrarSegundoAprovador()">
     + Adicionar segundo aprovador
 </button>
 
@@ -208,10 +209,11 @@ Nova Nota de Despesa
 
 <label>Aprovador</label><br>
 <select id="aprovador1Despesa"></select>
+<div id="estadoAprovadorFixoDespesa" class="estado-aprovador-fixo"></div>
 
 <br><br>
 
-<button type="button" onclick="mostrarSegundoAprovadorDespesa()">
+<button id="btnSegundoAprovadorDespesa" type="button" onclick="mostrarSegundoAprovadorDespesa()">
     + Adicionar segundo aprovador
 </button>
 
@@ -260,7 +262,7 @@ Nova Nota de Despesa
 <script src="../js/app.js"></script>
     
 <script>
-function mudarTipo(){
+async function mudarTipo(){
 
 const tipo = document.getElementById("tipo").value;
 
@@ -275,14 +277,20 @@ if(tipo === "despesas"){
 
 document.getElementById("areaDespesas").style.display = "block";
 
-carregarAprovadoresOutrasDespesas();
+await carregarAprovadoresOutrasDespesas();
+await configurarModoAprovadores();
 
 }
 
 }
-window.addEventListener("load", () => {
-    carregarAprovadores();
-    configurarCampoCriarEmNomeDe();
+window.addEventListener("load", async () => {
+    await carregarAprovadores();
+    await configurarCampoCriarEmNomeDe();
+    await configurarModoAprovadores();
+
+    document.getElementById("nomeColaborador")?.addEventListener("input", () => {
+        configurarModoAprovadores();
+    });
 });
 </script>
 
