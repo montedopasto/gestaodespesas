@@ -267,7 +267,24 @@ async function configurarMenuPagamentos(){
     }
 }
 
+const EMAIL_RELATORIO_DESPESAS = "jose.almanso@montedopasto.pt";
+
+async function configurarMenuRelatorioDespesas(){
+    const menu = document.getElementById("menuRelatorioDespesas");
+    if(!menu) return;
+
+    try{
+        const utilizador = await testarGraph();
+        const email = String(utilizador.mail || utilizador.userPrincipalName || "").toLowerCase();
+        menu.style.display = email === EMAIL_RELATORIO_DESPESAS ? "flex" : "none";
+    }catch(erro){
+        console.error("Não foi possível validar o acesso ao relatório:", erro);
+        menu.style.display = "none";
+    }
+}
+
 window.addEventListener("load", configurarMenuPagamentos);
+window.addEventListener("load", configurarMenuRelatorioDespesas);
 async function uploadPdfSharePoint(ficheiro){
 
     const token = await getAccessToken();

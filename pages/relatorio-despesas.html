@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Despesas</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="app">
+    <header class="topbar">
+        <div class="logo-area">
+            <img src="../assets/logo-monte-do-pasto.png" class="logo" alt="Monte do Pasto">
+            <div class="titulo-app">Gestão de Despesas</div>
+        </div>
+        <div class="topbar-direita"><div id="utilizador"></div></div>
+    </header>
+
+    <div class="main">
+        <aside class="sidebar">
+            <button class="nav-btn" onclick="window.location.href='dashboard.html'"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+            <button class="nav-btn" onclick="window.location.href='nova-despesa.html'"><i data-lucide="receipt"></i><span>Nova Nota de Despesa</span></button>
+            <button class="nav-btn" onclick="window.location.href='aprovacoes-despesas.html'"><i data-lucide="check-circle"></i><span>Aprovações</span></button>
+            <button class="nav-btn" id="menuPagamentos" style="display:none" onclick="window.location.href='pagamentos.html'"><i data-lucide="wallet"></i><span>Pagamentos</span></button>
+            <button class="nav-btn nav-active" id="menuRelatorioDespesas" style="display:none"><i data-lucide="file-spreadsheet"></i><span>Relatório de Despesas</span></button>
+        </aside>
+
+        <section class="content relatorio-despesas-content">
+            <h2>Relatório de Despesas</h2>
+            <p class="relatorio-introducao">Escolha o período das despesas que pretende incluir no ficheiro Excel.</p>
+
+            <div class="relatorio-filtros">
+                <div>
+                    <label for="dataInicioRelatorio">Data inicial</label>
+                    <input id="dataInicioRelatorio" type="date">
+                </div>
+                <div>
+                    <label for="dataFimRelatorio">Data final</label>
+                    <input id="dataFimRelatorio" type="date">
+                </div>
+                <button id="btnExportarRelatorio" type="button" onclick="exportarRelatorioDespesas()">
+                    <i data-lucide="download"></i>
+                    Exportar para Excel
+                </button>
+            </div>
+
+            <div id="estadoRelatorio" class="estado-relatorio" aria-live="polite"></div>
+        </section>
+    </div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/graph.js"></script>
+<script src="../js/relatorio-despesas.js"></script>
+<script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>
