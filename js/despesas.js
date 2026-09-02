@@ -1534,6 +1534,7 @@ window.downloadPDF = async function(){
     const data = await resp.json();
 
     const f = data.fields;
+    const eNotaKm = String(f.TipoDocumento || "").toUpperCase() === "KMS";
 
     const linhas =
         JSON.parse(f.LinhasJSON || "[]");
@@ -1560,7 +1561,7 @@ pdf.addImage(
 );
 pdf.setTextColor(255,255,255);
 pdf.setFontSize(22);
-pdf.text("NOTA DE DESPESA", 15, 18);
+pdf.text(eNotaKm ? "NOTA DE DESLOCAÇÃO EM KM" : "NOTA DE DESPESA", 15, 18);
 
 pdf.setTextColor(0,0,0);
 
@@ -1585,7 +1586,7 @@ pdf.setFontSize(11);
 
     pdf.setFontSize(18);
 
-    novaLinha("Nota de Despesa", 10);
+    novaLinha(eNotaKm ? "Nota de Deslocação em KM" : "Nota de Despesa", 10);
 
     pdf.setFontSize(11);
 
@@ -1656,114 +1657,73 @@ novaLinha(new Date(f.Modified).toLocaleString("pt-PT"));
 
     novaLinha("");
 
-    novaLinha(
-        "Total: " +
-        Number(f.TotalRecebido || 0).toFixed(2) +
-        " €"
-    );
+    if(eNotaKm){
+        pdf.setFont(undefined, "bold");
+        novaLinha("Matrícula:");
+        pdf.setFont(undefined, "normal");
+        novaLinha(f.MatriculaVeiculo || "-");
 
-    novaLinha("");
-
-    for(const [index, l] of linhas.entries()){
-
-        pdf.setFontSize(12);
-
-        novaLinha(
-            "Despesa " + (index + 1),
-            8
-        );
-
-        pdf.setFontSize(10);
-
-        novaLinha("Data: " + (l.data || "-"));
-        novaLinha("Rubrica: " + (l.rubrica || "-"));
-        novaLinha("Descrição: " + (l.descricao || "-"));
-        novaLinha("N.º fatura: " + (l.numeroFatura || l.qrNumeroDocumento || "-"));
-
-        novaLinha(
-            "Valor: " +
-            Number(l.valor || 0).toFixed(2) +
-            " €"
-        );
-
-        if(l.ficheiroNome){
-
-            novaLinha(
-                "Documento: " +
-                l.ficheiroNome
-            );
-
-        }
-
+        novaLinha("Total de KMs: " + Number(f.TotalKMs || 0).toFixed(2));
+        novaLinha("Valor por KM: " + Number(f.ValorPorKM || 0).toFixed(2) + " €");
+        novaLinha("Total a receber: " + Number(f.TotalRecebido || 0).toFixed(2) + " €");
         novaLinha("");
 
-        /* =========================================
-           IMAGENS
-        ========================================= */
+        for(const [index, l] of linhas.entries()){
+            pdf.setFontSize(12);
+            novaLinha("Deslocação " + (index + 1), 8);
+            pdf.setFontSize(10);
+            novaLinha("Data: " + (l.data || "-"));
+            novaLinha("Origem: " + (l.origem || "-"));
+            novaLinha("Destino: " + (l.destino || "-"));
+            novaLinha("Justificação: " + (l.justificacao || "-"));
+            novaLinha("KMs: " + Number(l.kms || 0).toFixed(2));
+            novaLinha("");
+        }
+    }else{
+        novaLinha("Total: " + Number(f.TotalRecebido || 0).toFixed(2) + " €");
+        novaLinha("");
 
-        if(l.ficheiroDownloadUrl){
+        for(const [index, l] of linhas.entries()){
+            pdf.setFontSize(12);
+            novaLinha("Despesa " + (index + 1), 8);
+            pdf.setFontSize(10);
+            novaLinha("Data: " + (l.data || "-"));
+            novaLinha("Rubrica: " + (l.rubrica || "-"));
+            novaLinha("Descrição: " + (l.descricao || "-"));
+            novaLinha("N.º fatura: " + (l.numeroFatura || l.qrNumeroDocumento || "-"));
+            novaLinha("Valor: " + Number(l.valor || 0).toFixed(2) + " €");
 
-            try{
-
-                const response =
-                    await fetch(
-                        l.ficheiroDownloadUrl
-                    );
-
-                const blob =
-                    await response.blob();
-
-                /* =============================
-                   IMAGENS
-                ============================= */
-
-                if(blob.type.startsWith("image/")){
-
-                    const reader =
-                        new FileReader();
-
-                    const base64 =
-                        await new Promise(resolve => {
-
-                            reader.onloadend =
-                                () => resolve(reader.result);
-
-                            reader.readAsDataURL(blob);
-
-                        });
-
-                    if(y > 180){
-
-                        pdf.addPage();
-
-                        y = 15;
-
-                    }
-
-                    pdf.addImage(
-                        base64,
-                        "JPEG",
-                        15,
-                        y,
-                        90,
-                        60
-                    );
-
-                    y += 70;
-
-                }
-
-            }catch(e){
-
-                console.log(
-                    "Erro imagem:",
-                    e
-                );
-
+            if(l.ficheiroNome){
+                novaLinha("Documento: " + l.ficheiroNome);
             }
 
-        }
+            novaLinha("");
 
+            if(l.ficheiroDownloadUrl){
+                try{
+                    const response = await fetch(l.ficheiroDownloadUrl);
+                    const blob = await response.blob();
+
+                    if(blob.type.startsWith("image/")){
+                        const reader = new FileReader();
+                        const base64 = await new Promise(resolve => {
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+
+                        if(y > 180){
+                            pdf.addPage();
+                            y = 15;
+                        }
+
+                        pdf.addImage(base64, "JPEG", 15, y, 90, 60);
+                        y += 70;
+                    }
+                }catch(e){
+                    console.log("Erro imagem:", e);
+                }
+            }
+        }
     }
 
     /* =========================================
@@ -1796,7 +1756,7 @@ novaLinha(new Date(f.Modified).toLocaleString("pt-PT"));
        ANEXAR PDFs
     ========================================= */
 
-    for(const l of linhas){
+    for(const l of eNotaKm ? [] : linhas){
 
         if(!l.ficheiroDownloadUrl)
             continue;
@@ -1865,7 +1825,11 @@ novaLinha(new Date(f.Modified).toLocaleString("pt-PT"));
 
     a.href = url;
 
-    a.download = "Nota_Despesa_Final.pdf";
+    const nomeBase = String(f.NumeroNota || "Nota")
+        .replace(/[^a-zA-Z0-9_-]+/g, "-");
+    a.download = eNotaKm
+        ? `${nomeBase}-Deslocacao-KM.pdf`
+        : `${nomeBase}-Despesas.pdf`;
 
     a.click();
 
