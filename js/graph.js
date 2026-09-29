@@ -117,7 +117,7 @@ async function testarGraph(){
     const token = await getAccessToken();
 
     const resposta = await fetch(
-        "https://graph.microsoft.com/v1.0/me",
+        "https://graph.microsoft.com/v1.0/me?$select=id,displayName,mail,userPrincipalName,otherMails",
         {
             headers: {
                 Authorization: "Bearer " + token
@@ -220,9 +220,14 @@ async function obterPerfilUtilizador(){
 
     const utilizador = await testarGraph();
 
-    const email = String(
-        utilizador.mail || utilizador.userPrincipalName || ""
-    ).trim().toLowerCase();
+    const normalizarEmail = valor => String(valor || "").trim().toLowerCase();
+    const emailsUtilizador = new Set([
+        normalizarEmail(utilizador.mail),
+        normalizarEmail(utilizador.userPrincipalName),
+        ...(Array.isArray(utilizador.otherMails)
+            ? utilizador.otherMails.map(normalizarEmail)
+            : [])
+    ].filter(Boolean));
 
     const site = await obterSiteApp();
 
@@ -245,16 +250,52 @@ async function obterPerfilUtilizador(){
         url = dados["@odata.nextLink"] || null;
     }
 
-    const encontrado = lista.find(u => {
-        const emailRegisto = u.fields?.Email;
-        const valorEmail = typeof emailRegisto === "object"
-            ? emailRegisto?.Email || emailRegisto?.email || ""
-            : emailRegisto;
-        return String(valorEmail || "").trim().toLowerCase() === email;
+    function obterCampo(fields, nome){
+        const chave = Object.keys(fields || {}).find(
+            item => item.toLowerCase() === nome.toLowerCase()
+        );
+        return chave ? fields[chave] : undefined;
+    }
+
+    function extrairEmail(valor){
+        if(typeof valor === "string") return normalizarEmail(valor);
+        if(valor && typeof valor === "object"){
+            return normalizarEmail(
+                valor.Email || valor.email || valor.LookupValue || valor.lookupValue
+            );
+        }
+        return "";
+    }
+
+    let encontrado = lista.find(u => {
+        const fields = u.fields || {};
+        const emailRegisto = extrairEmail(obterCampo(fields, "Email"));
+        const tituloRegisto = extrairEmail(obterCampo(fields, "Title"));
+        return emailsUtilizador.has(emailRegisto) || emailsUtilizador.has(tituloRegisto);
     });
 
+    if(!encontrado){
+        const locaisUtilizador = new Set(
+            [...emailsUtilizador].map(email => email.split("@")[0]).filter(Boolean)
+        );
+        const candidatos = lista.filter(u => {
+            const fields = u.fields || {};
+            const emailRegisto = extrairEmail(obterCampo(fields, "Email"));
+            const tituloRegisto = extrairEmail(obterCampo(fields, "Title"));
+            return [emailRegisto, tituloRegisto].some(email =>
+                email && locaisUtilizador.has(email.split("@")[0])
+            );
+        });
+        if(candidatos.length === 1) encontrado = candidatos[0];
+    }
+
     if(encontrado){
-        const perfil = String(encontrado.fields?.Perfil || "").trim().toLowerCase();
+        const valorPerfil = obterCampo(encontrado.fields || {}, "Perfil");
+        const perfil = String(
+            typeof valorPerfil === "object"
+                ? valorPerfil?.LookupValue || valorPerfil?.Value || ""
+                : valorPerfil || ""
+        ).trim().toLowerCase();
         const perfis = {
             admin:"Admin",
             gestorfaturas:"GestorFaturas",
