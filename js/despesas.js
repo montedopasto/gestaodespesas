@@ -298,7 +298,7 @@ async function configurarCampoCriarEmNomeDe(){
     try{
         const perfil = await obterPerfilUtilizador();
         campo.style.display =
-            perfil === "Admin" || perfil === "GestorFaturas"
+            perfil === "Admin" || perfil === "GestorFaturas" || perfil === "Registador"
                 ? "block"
                 : "none";
     }catch(erro){
@@ -311,7 +311,7 @@ async function obterNomeColaboradorDaNota(utilizador){
 
     const perfil = await obterPerfilUtilizador();
     const podeCriarEmNomeDe =
-        perfil === "Admin" || perfil === "GestorFaturas";
+        perfil === "Admin" || perfil === "GestorFaturas" || perfil === "Registador";
 
     if(!podeCriarEmNomeDe){
         return utilizador.displayName;
@@ -414,7 +414,8 @@ async function configurarModoAprovadores(){
     const perfil = await obterPerfilUtilizador();
     if(versaoAtual !== versaoConfiguracaoAprovadores) return;
 
-    const podeCriarEmNomeDe = perfil === "Admin" || perfil === "GestorFaturas";
+    const podeCriarEmNomeDe =
+        perfil === "Admin" || perfil === "GestorFaturas" || perfil === "Registador";
     const nomeOutro = document.getElementById("nomeColaborador")?.value.trim() || "";
 
     if(podeCriarEmNomeDe && nomeOutro){
@@ -752,6 +753,14 @@ async function obterAprovadores(){
 async function carregarAprovacoesDespesas(){
 
     const utilizador = await testarGraph();
+    const perfil = await obterPerfilUtilizador();
+
+    if(perfil === "Registador"){
+        alert("Este perfil não tem permissão para aprovar ou rejeitar pedidos.");
+        window.location.replace("dashboard.html");
+        return;
+    }
+
     const token = await getAccessToken();
     const site = await obterSiteApp();
     const siteId = site.id;
@@ -841,6 +850,12 @@ async function rejeitarDespesa(id){
 }
 
 async function atualizarEstadoDespesa(id, estado, justificacao = ""){
+
+    const perfil = await obterPerfilUtilizador();
+    if(perfil === "Registador"){
+        alert("Este perfil não tem permissão para aprovar ou rejeitar pedidos.");
+        return;
+    }
 
     const token = await getAccessToken();
     const site = await obterSiteApp();
@@ -948,7 +963,7 @@ async function carregarDashboardDespesas(){
             const aprovador1 = String(campos.Aprovador1Email || "").trim().toLowerCase();
             const aprovador2 = String(campos.Aprovador2Email || "").trim().toLowerCase();
 
-            const pendenteParaAprovar = campos.Estado === "Pendente" &&
+            const pendenteParaAprovar = perfil !== "Registador" && campos.Estado === "Pendente" &&
                 (aprovador1 === email || aprovador2 === email);
 
             return emailSubmissor === email || pendenteParaAprovar;
@@ -969,8 +984,11 @@ async function carregarDashboardDespesas(){
             pendentes++;
 
             if(
-                String(f.Aprovador1Email || "").trim().toLowerCase() === email ||
-                String(f.Aprovador2Email || "").trim().toLowerCase() === email
+                perfil !== "Registador" &&
+                (
+                    String(f.Aprovador1Email || "").trim().toLowerCase() === email ||
+                    String(f.Aprovador2Email || "").trim().toLowerCase() === email
+                )
             ){
                 meusPendentes++;
             }

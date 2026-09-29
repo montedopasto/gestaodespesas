@@ -521,6 +521,12 @@ carregarPedido();
 }
 async function atualizarEstadoPedido(novoEstado, comentario=""){
 
+const perfil = await obterPerfilUtilizador();
+if(perfil === "Registador"){
+alert("Este perfil não tem permissão para aprovar ou rejeitar pedidos.");
+return;
+}
+
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
@@ -982,6 +988,12 @@ async function carregarAprovacoes(){
 
 const perfil = await obterPerfilUtilizador();
 
+if(perfil === "Registador"){
+alert("Este perfil não tem permissão para aprovar ou rejeitar pedidos.");
+window.location.replace("dashboard.html");
+return;
+}
+
 const btnFatura = document.getElementById("btnNovaFatura");
 const btnDespesa = document.getElementById("btnNovaDespesa");
 const menuAdmin = document.getElementById("menuAdmin");
@@ -1122,6 +1134,12 @@ location.reload();
 
 }
 async function atualizarEstadoPedidoPorId(id, novoEstado, comentario=""){
+
+const perfil = await obterPerfilUtilizador();
+if(perfil === "Registador"){
+alert("Este perfil não tem permissão para aprovar ou rejeitar pedidos.");
+return;
+}
 
 const token = await getAccessToken();
 const site = await obterSiteApp();

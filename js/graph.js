@@ -283,8 +283,25 @@ async function configurarMenuRelatorioDespesas(){
     }
 }
 
+async function configurarRestricoesRegistador(){
+    try{
+        const perfil = await obterPerfilUtilizador();
+        if(perfil !== "Registador") return;
+
+        document.querySelectorAll(
+            "#menuAprovacoesDespesas, #menuAprovacoes, .btn-aprovar, .btn-rejeitar"
+        ).forEach(elemento => {
+            elemento.style.display = "none";
+        });
+
+    }catch(erro){
+        console.error("Não foi possível aplicar as restrições do perfil Registador:", erro);
+    }
+}
+
 window.addEventListener("load", configurarMenuPagamentos);
 window.addEventListener("load", configurarMenuRelatorioDespesas);
+window.addEventListener("load", configurarRestricoesRegistador);
 async function uploadPdfSharePoint(ficheiro){
 
     const token = await getAccessToken();
