@@ -289,6 +289,21 @@ async function obterPerfilUtilizador(){
         if(candidatos.length === 1) encontrado = candidatos[0];
     }
 
+    if(!encontrado){
+        const normalizarNome = valor => String(valor || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLowerCase();
+        const nomeUtilizador = normalizarNome(utilizador.displayName);
+        const candidatosNome = lista.filter(u => {
+            const fields = u.fields || {};
+            const nomeRegisto = normalizarNome(obterCampo(fields, "Nome"));
+            return nomeUtilizador && nomeRegisto === nomeUtilizador;
+        });
+        if(candidatosNome.length === 1) encontrado = candidatosNome[0];
+    }
+
     if(encontrado){
         const valorPerfil = obterCampo(encontrado.fields || {}, "Perfil");
         const perfil = String(
@@ -307,6 +322,25 @@ async function obterPerfilUtilizador(){
 
     return "Utilizador";
 
+}
+
+async function mostrarDiagnosticoPerfilSePedido(){
+    if(!new URLSearchParams(window.location.search).has("diagnosticoPerfil")) return;
+
+    try{
+        const utilizador = await testarGraph();
+        const perfil = await obterPerfilUtilizador();
+        const mensagem = [
+            "Diagnóstico da sessão",
+            `Nome Microsoft: ${utilizador.displayName || "-"}`,
+            `Email Microsoft: ${utilizador.mail || "-"}`,
+            `Utilizador Microsoft: ${utilizador.userPrincipalName || "-"}`,
+            `Perfil reconhecido: ${perfil}`
+        ].join("\n");
+        alert(mensagem);
+    }catch(erro){
+        alert("Não foi possível obter o diagnóstico da sessão: " + (erro.message || erro));
+    }
 }
 
 /* Mostra o módulo financeiro apenas aos perfis autorizados. */
@@ -367,6 +401,7 @@ async function configurarRestricoesRegistador(){
 window.addEventListener("load", configurarMenuPagamentos);
 window.addEventListener("load", configurarMenuRelatorioDespesas);
 window.addEventListener("load", configurarRestricoesRegistador);
+window.addEventListener("load", mostrarDiagnosticoPerfilSePedido);
 async function uploadPdfSharePoint(ficheiro){
 
     const token = await getAccessToken();
