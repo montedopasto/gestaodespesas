@@ -289,10 +289,15 @@ async function configurarRestricoesRegistador(){
         if(perfil !== "Registador") return;
 
         document.querySelectorAll(
-            "#menuAprovacoesDespesas, #menuAprovacoes, .btn-aprovar, .btn-rejeitar"
+            "#menuDashboard, #menuAprovacoesDespesas, #menuAprovacoes, .btn-aprovar, .btn-rejeitar"
         ).forEach(elemento => {
             elemento.style.display = "none";
         });
+
+        const pagina = window.location.pathname.split("/").pop().toLowerCase();
+        if(pagina && pagina !== "nova-despesa.html"){
+            window.location.replace("nova-despesa.html");
+        }
 
     }catch(erro){
         console.error("Não foi possível aplicar as restrições do perfil Registador:", erro);

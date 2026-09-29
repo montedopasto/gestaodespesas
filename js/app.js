@@ -99,6 +99,11 @@ document.getElementById("utilizador").innerText =
 async function carregarDashboard(){
 const perfil = await obterPerfilUtilizador();
 
+if(perfil === "Registador"){
+window.location.replace("nova-despesa.html");
+return;
+}
+
 console.log("Perfil do utilizador:", perfil);
 
 const btnFatura = document.getElementById("btnNovaFatura");

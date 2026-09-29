@@ -323,6 +323,13 @@ async function obterNomeColaboradorDaNota(utilizador){
     return nomeIndicado || utilizador.displayName;
 }
 
+async function navegarAposGuardarNota(){
+    const perfil = await obterPerfilUtilizador();
+    window.location.href = perfil === "Registador"
+        ? "nova-despesa.html"
+        : "dashboard.html";
+}
+
 let configuracaoAprovadorFixoPromise = null;
 let versaoConfiguracaoAprovadores = 0;
 
@@ -684,7 +691,7 @@ try{
 
 alert("✅ Nota de despesa guardada com sucesso!" + avisoEmail);
 
-window.location.href = "dashboard.html";
+await navegarAposGuardarNota();
 
 }
 async function carregarAprovadoresDespesa(){
@@ -936,6 +943,12 @@ async function carregarDashboardDespesas(){
 
     const utilizador = await testarGraph();
     const perfil = await obterPerfilUtilizador();
+
+    if(perfil === "Registador"){
+        window.location.replace("nova-despesa.html");
+        return;
+    }
+
     const token = await getAccessToken();
     const site = await obterSiteApp();
     const siteId = site.id;
@@ -2472,7 +2485,7 @@ linhas.push({
 
     alert("✅ Despesa guardada com sucesso!" + avisoEmail);
 
-    window.location.href = "dashboard.html";
+    await navegarAposGuardarNota();
 
 }
 /* =============================
