@@ -220,29 +220,48 @@ async function obterPerfilUtilizador(){
 
     const utilizador = await testarGraph();
 
-    const email = utilizador.mail || utilizador.userPrincipalName;
+    const email = String(
+        utilizador.mail || utilizador.userPrincipalName || ""
+    ).trim().toLowerCase();
 
     const site = await obterSiteApp();
 
     const siteId = site.id;
 
-    const resposta = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/UtilizadoresApp/items?expand=fields`,
-        {
-            headers: {
-                Authorization: "Bearer " + token
-            }
+    let url = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/UtilizadoresApp/items?expand=fields&$top=999`;
+    const lista = [];
+
+    while(url){
+        const resposta = await fetch(url, {
+            headers: { Authorization:"Bearer " + token }
+        });
+
+        if(!resposta.ok){
+            throw new Error("Não foi possível consultar o perfil do utilizador.");
         }
-    );
 
-    const dados = await resposta.json();
+        const dados = await resposta.json();
+        lista.push(...(dados.value || []));
+        url = dados["@odata.nextLink"] || null;
+    }
 
-    const lista = dados.value;
-
-    const encontrado = lista.find(u => u.fields.Email === email);
+    const encontrado = lista.find(u => {
+        const emailRegisto = u.fields?.Email;
+        const valorEmail = typeof emailRegisto === "object"
+            ? emailRegisto?.Email || emailRegisto?.email || ""
+            : emailRegisto;
+        return String(valorEmail || "").trim().toLowerCase() === email;
+    });
 
     if(encontrado){
-        return encontrado.fields.Perfil;
+        const perfil = String(encontrado.fields?.Perfil || "").trim().toLowerCase();
+        const perfis = {
+            admin:"Admin",
+            gestorfaturas:"GestorFaturas",
+            utilizador:"Utilizador",
+            registador:"Registador"
+        };
+        return perfis[perfil] || "Utilizador";
     }
 
     return "Utilizador";

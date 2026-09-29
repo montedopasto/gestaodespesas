@@ -255,6 +255,7 @@ A ligar ao sistema...
 
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/graph.js"></script>
 
 <script>
 
@@ -300,8 +301,19 @@ overlay.classList.add("show");
 texto.innerText = "Bem-vindo, " + primeiroNome;
 
 /* entrar */
+let destino = obterDestinoDepoisDoLogin();
+
+try{
+    const perfil = await obterPerfilUtilizador();
+    if(perfil === "Registador"){
+        destino = caminhoBaseAplicacao + "pages/nova-despesa.html";
+    }
+}catch(erroPerfil){
+    console.error("Não foi possível determinar a página inicial:", erroPerfil);
+}
+
 setTimeout(() => {
-    window.location.replace(obterDestinoDepoisDoLogin());
+    window.location.replace(destino);
 }, 1800);
 
 }
