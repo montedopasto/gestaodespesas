@@ -2,6 +2,10 @@ async function getAccessToken() {
 
     await promessaRetornoLogin;
 
+    if(typeof iniciarLoginRefeitorioSePedido === "function" && await iniciarLoginRefeitorioSePedido()){
+        throw new Error("A iniciar sessão do Refeitorio...");
+    }
+
     let account = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
 
     if(!account){

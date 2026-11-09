@@ -54,6 +54,29 @@ function obterDestinoDepoisDoLogin(){
         : caminhoBaseAplicacao + "pages/dashboard.html";
 }
 
+let loginRefeitorioEmCurso = false;
+
+async function iniciarLoginRefeitorioSePedido(){
+    const parametros = new URLSearchParams(window.location.search);
+    if(parametros.get("conta") !== "refeitorio") return false;
+    if(loginRefeitorioEmCurso) return true;
+    loginRefeitorioEmCurso = true;
+
+    const destinoLimpo = new URL(window.location.href);
+    destinoLimpo.searchParams.delete("conta");
+    destinoLimpo.searchParams.delete("diagnosticoPerfil");
+    guardarDestinoDepoisDoLogin(destinoLimpo.href);
+
+    await msalInstance.loginRedirect({
+        scopes:scopesAplicacao,
+        prompt:"select_account",
+        loginHint:"refeitorio@montedopasto.pt",
+        redirectStartPage:destinoLimpo.href
+    });
+
+    return true;
+}
+
 async function login(destino) {
 
     const loginRequest = {
