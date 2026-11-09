@@ -69,7 +69,7 @@ async function iniciarLoginRefeitorioSePedido(){
 
     await msalInstance.loginRedirect({
         scopes:scopesAplicacao,
-        prompt:"select_account",
+        prompt:"login",
         loginHint:"refeitorio@montedopasto.pt",
         redirectStartPage:destinoLimpo.href
     });
